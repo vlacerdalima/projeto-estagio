@@ -17,6 +17,7 @@ build/
 .env.*.local
 .envrc
 .envrc.local
+!.env.example
 
 # Prisma
 prisma/dev.db
