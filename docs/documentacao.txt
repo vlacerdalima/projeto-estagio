@@ -1,0 +1,94 @@
+Documentacao do Projeto - Conexao com PostgreSQL e Layout Simples
+
+1) Visao Geral
+- Objetivo: Exibir o total de vendas a partir de um banco PostgreSQL em Docker.
+- Itens principais: endpoint /api/vendas, conexao com o banco em lib/db.ts, botao de vendas na home.
+
+2) Arquivos Criados/Alterados
+- lib/db.ts
+  - Cria um Pool do pg usando variaveis de ambiente (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD).
+  - Permite executar queries no PostgreSQL.
+
+- app/api/vendas/route.ts
+  - Endpoint GET /api/vendas.
+  - Executa: SELECT COUNT(*) AS total FROM sales
+  - Retorna JSON: { "total": <numero> }.
+
+- components/VendasButton.tsx
+  - Componente cliente (use client) com um botao "Vendas".
+  - Ao clicar, faz fetch em /api/vendas e exibe o total abaixo do botao.
+  - Exibe estados de carregamento e erro simples.
+
+- app/page.tsx
+  - Layout minimalista.
+  - Header com o texto: "site para analise de restaurante".
+  - Conteudo principal apenas com o botao de vendas.
+  - Removidos elementos anteriores (logos, links, etc.).
+
+- .env.example
+  - Modelo de variaveis de ambiente exigidas pela conexao com o banco.
+  - Campos: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD.
+
+3) Variaveis de Ambiente
+- Arquivo: .env.local (na raiz, ignorado pelo Git) ou use variaveis do ambiente do sistema.
+- Exemplo:
+  DB_HOST=localhost
+  DB_PORT=5432
+  DB_NAME=challenge_db
+  DB_USER=challenge
+  DB_PASSWORD=challenge_2024
+
+4) Banco de Dados (Docker)
+- Container exemplo: godlevel-db (postgres:15)
+- Para listar tabelas: docker exec godlevel-db psql -U <usuario> -d <db> -c "\\dt"
+- A tabela usada para a contagem e: sales
+
+5) Como Rodar
+- Desenvolvimento: npm run dev
+- Acesse: http://localhost:3000
+- Clique no botao "Vendas" para buscar o total e exibir o numero.
+
+6) Notas
+- Se a tabela tiver outro nome, altere a query em app/api/vendas/route.ts.
+- Se as credenciais mudarem, atualize .env.local e reinicie o servidor.
+
+7) UI com estilo shadcn (Tailwind)
+- Tentativa de instalar shadcn/ui via CLI falhou ao escrever em app/globals.css (ambiente OneDrive). Como alternativa imediata:
+  - Foram criados componentes compatíveis com o padrão shadcn em `components/ui/`:
+    - `components/ui/button.tsx` (Button estilizado)
+    - `components/ui/card.tsx` (Card, CardHeader, CardTitle, CardContent)
+  - A Home foi atualizada para usar um Card com título "Vendas" e o botão `Button`.
+- Caso queira finalizar a integração oficial do shadcn no futuro, reexecute:
+  - `npx shadcn@latest init --yes --base-color zinc`
+  - `npx shadcn@latest add button card`
+
+8) Funcionalidades de Análise por Restaurante
+- Componente `RestaurantSearch.tsx`:
+  - Dropdown com busca de restaurantes que lista todos os 100 restaurantes da base.
+  - Após seleção, busca em paralelo vendas e faturamento via `/api/restaurante/[id]/vendas` e `/api/restaurante/[id]/faturamento`.
+  - Mostra dois cards: um com total de vendas e outro com faturamento formatado em R$.
+- APIs criadas:
+  - `app/api/restaurantes/route.ts`: lista todos os restaurantes (id, name)
+  - `app/api/restaurante/[id]/vendas/route.ts`: conta vendas do restaurante
+  - `app/api/restaurante/[id]/faturamento/route.ts`: soma `payments.value` das vendas do restaurante
+- Layout da home: dois cards lado a lado (esquerda: vendas totais; direita: análise por restaurante)
+
+9) Paleta de Cores
+- Branco (#ffffff) como cor de fundo principal
+- Salmão (#fa8072) como cor primária (botões, títulos, acentos)
+- Variantes claras/escuras conforme modo claro/escuro do sistema
+
+10) Otimizações de Performance (Índices SQL)
+- Índices criados para acelerar queries frequentes:
+  - `idx_sales_store_id` na coluna `store_id` da tabela `sales`: acelera contagem de vendas por restaurante
+  - `idx_payments_sale_id` na coluna `sale_id` da tabela `payments`: acelera agregação de faturamento por restaurante
+- Impacto: consultas de vendas e faturamento por restaurante ficam mais rápidas, especialmente com grandes volumes de dados
+- Para recriar os índices após reset do banco:
+  ```
+  docker exec godlevel-db psql -U challenge -d challenge_db -c "CREATE INDEX idx_sales_store_id ON sales(store_id);"
+  docker exec godlevel-db psql -U challenge -d challenge_db -c "CREATE INDEX idx_payments_sale_id ON payments(sale_id);"
+  ```
+
+11) Mudança temporária (imagem no botão)
+- Foi feita uma tentativa de exibir uma imagem ao invés do número após o clique.
+- O arquivo carregado estava com nome `imagem_vendas.jpg.png`, causando 404; a funcionalidade foi revertida por solicitação e o botão voltou a exibir o total numérico.

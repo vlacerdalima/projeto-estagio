@@ -1,13 +1,39 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #ffffff; /* branco */
+  --foreground: #0a0a0a;
+
+  /* Paleta principal: salmão */
+  --primary: #fa8072; /* salmon */
+  --primary-foreground: #ffffff;
+  --secondary: #ef9f93; /* salmon claro para secundário */
+  --secondary-foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --accent: #ffe4de; /* tom bem claro de salmão para hovers */
+  --accent-foreground: #0a0a0a;
+  --muted-foreground: #71717a;
+  --input: #e4e4e7;
+  --ring: #fa8072;
+  --destructive: #ef4444;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -15,7 +41,20 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
-    --foreground: #ededed;
+    --foreground: #f4f4f5;
+
+    --primary: #f59b8f;
+    --primary-foreground: #0b1220;
+    --secondary: #2a2a2a;
+    --secondary-foreground: #fafafa;
+    --card: #0f0f10;
+    --card-foreground: #e5e7eb;
+    --accent: #1f1f1f;
+    --accent-foreground: #fafafa;
+    --muted-foreground: #a1a1aa;
+    --input: #27272a;
+    --ring: #f59b8f;
+    --destructive: #f87171;
   }
 }
 
