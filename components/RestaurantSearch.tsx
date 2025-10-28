@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
 interface RestaurantSearchProps {
-  onSelect: (sales: number | null, revenue: number | null) => void;
+  onSelect: (sales: number | null, revenue: number | null, produto: { nome: string | null; total: number } | null, turno: { manha: number; tarde: number; noite: number } | null, restaurantId: number) => void;
+  period: 'mensal' | 'anual';
 }
 
-export default function RestaurantSearch({ onSelect }: RestaurantSearchProps) {
+export default function RestaurantSearch({ onSelect, period }: RestaurantSearchProps) {
   const [restaurants, setRestaurants] = useState<Array<{ id: number; name: string }>>([]);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<number | null>(null);
@@ -32,18 +33,28 @@ export default function RestaurantSearch({ onSelect }: RestaurantSearchProps) {
     setLoading(true);
 
     try {
-      const [salesRes, revenueRes] = await Promise.all([
-        fetch(`/api/restaurante/${restaurantId}/vendas`),
-        fetch(`/api/restaurante/${restaurantId}/faturamento`)
+      const [salesRes, revenueRes, produtoRes, turnoRes] = await Promise.all([
+        fetch(`/api/restaurante/${restaurantId}/vendas?period=${period}`),
+        fetch(`/api/restaurante/${restaurantId}/faturamento?period=${period}`),
+        fetch(`/api/restaurante/${restaurantId}/produto-mais-vendido?period=${period}`),
+        fetch(`/api/restaurante/${restaurantId}/vendas-por-turno?period=${period}`)
       ]);
       
       const salesData = await salesRes.json();
       const revenueData = await revenueRes.json();
+      const produtoData = await produtoRes.json();
+      const turnoData = await turnoRes.json();
       
-      onSelect(salesData.total, parseFloat(revenueData.revenue));
+      onSelect(
+        salesData.total, 
+        parseFloat(revenueData.revenue),
+        { nome: produtoData.nome, total: produtoData.total },
+        { manha: turnoData.manha, tarde: turnoData.tarde, noite: turnoData.noite },
+        restaurantId
+      );
     } catch (e) {
       console.error('Erro ao buscar dados:', e);
-      onSelect(null, null);
+      onSelect(null, null, null, null, restaurantId);
     } finally {
       setLoading(false);
     }
@@ -51,19 +62,18 @@ export default function RestaurantSearch({ onSelect }: RestaurantSearchProps) {
 
   return (
     <div className="relative">
-      <Button
+      <button
         onClick={() => setShowDropdown(!showDropdown)}
-        variant="outline"
         disabled={loading}
-        className="w-full justify-between bg-white text-left text-sm"
+        className="text-sm font-medium text-[#fa8072] hover:underline disabled:opacity-50"
       >
         {selected
           ? restaurants.find(r => r.id === selected)?.name
           : 'Selecionar Restaurante'}
         {loading && ' (carregando...)'}
-      </Button>
+      </button>
         {showDropdown && (
-          <Card className="absolute z-50 mt-2 max-h-64 w-full overflow-y-auto border border-[--color-primary]/30 bg-white">
+          <Card className="absolute z-50 mt-2 w-64 overflow-y-auto border border-[--color-primary]/30 bg-white shadow-lg">
             <input
               type="text"
               placeholder="Buscar restaurante..."

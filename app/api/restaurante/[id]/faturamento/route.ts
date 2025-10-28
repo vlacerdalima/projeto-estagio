@@ -7,11 +7,20 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const period = searchParams.get('period') || 'anual';
+    
+    // Determinar o filtro de data baseado no período
+    let dateFilter = '';
+    if (period === 'mensal') {
+      dateFilter = "AND s.created_at >= NOW() - INTERVAL '30 days'";
+    }
+    
     const result = await pool.query(
       `SELECT COALESCE(SUM(p.value), 0) as revenue 
        FROM sales s 
        JOIN payments p ON s.id = p.sale_id 
-       WHERE s.store_id = $1`,
+       WHERE s.store_id = $1 ${dateFilter}`,
       [id]
     );
     return NextResponse.json({ revenue: parseFloat(result.rows[0].revenue) });
