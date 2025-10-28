@@ -277,12 +277,4 @@ Possíveis extensões do sistema:
 
 ---
 
-## AUTOR
-Vitor Lacerda
-Desenvolvido como parte do desafio técnico
-
----
-
-## DATA
-Implementação concluída em 2025
 
