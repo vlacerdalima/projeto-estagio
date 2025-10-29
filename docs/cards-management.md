@@ -319,6 +319,47 @@ if (newCardLeft < 0) {
 - Cores mais escuras e visíveis no ranking de produtos
 - Título "Ranking Completo" em negrito e maiúsculo
 
+### 7. ESTADOS DE LOADING
+- Implementado estado de loading para cards que fazem queries complexas
+- Exibe "Carregando dados..." enquanto busca informações
+- Cards com loading: Produto Mais Vendido (ranking), Ticket Médio
+
+### 8. OTIMIZAÇÕES SQL
+- Índices de banco de dados implementados para performance
+- Arquivo: `database/database-indexes.sql`
+- Redução esperada de 70-90% no tempo de queries
+- Execute o arquivo SQL no banco para aplicar
+
+### 9. NOVO CARD: TICKET MÉDIO
+- Exibe o valor médio gasto por pedido no período selecionado
+- Mostra variação percentual vs período anterior
+- Indicadores visuais: ▲ verde (aumento) ou ▼ vermelho (queda)
+- API: `/api/restaurante/[id]/ticket-medio`
+- Formato monetário brasileiro (R$ X,XX)
+
+### 10. NOVO CARD: VENDAS POR CANAL
+- Exibe distribuição de vendas por canal (Presencial, Delivery, etc.)
+- Gráfico de barras horizontais
+- Informações: nome do canal, quantidade de pedidos, receita total, percentual
+- API: `/api/restaurante/[id]/vendas-por-canal`
+- Mapeia IDs de canal (channel_id) para nomes legíveis
+- Suporta JOIN com tabela `channels` ou fallback para IDs
+
+### 11. CARDS DISPONÍVEIS
+Total de 6 cards no sistema:
+1. **Vendas** - Contagem total de vendas
+2. **Faturamento** - Receita total
+3. **Produto Mais Vendido** - Com ranking expandível
+4. **Vendas por Turno** - Distribuição por manhã/tarde/noite
+5. **Ticket Médio** - Valor médio por pedido
+6. **Vendas por Canal** - Distribuição por canal de venda
+
+### 12. AJUSTES DE VISUAL
+- Texto "período" removido antes dos botões mensal/anual
+- Cards de vendas por canal com texto branco para contraste em fundo escuro
+- Todas as legendas e nomes de canais em cor branca
+- Percentuais e quantidades de pedidos em cores mais claras
+
 ---
 ## FUTURAS MELHORIAS
 

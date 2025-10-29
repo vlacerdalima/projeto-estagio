@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import RestaurantSearch from "@/components/RestaurantSearch";
 import PeriodSelector from "@/components/PeriodSelector";
 import SalesByShiftChart from "@/components/SalesByShiftChart";
+import VendasPorCanalChart from "@/components/VendasPorCanalChart";
 
 interface Position {
   x: number;
@@ -24,22 +25,39 @@ interface ProdutoRanking {
   total: number;
 }
 
+interface TicketMedio {
+  ticketMedio: number;
+  variacao: number;
+}
+
+interface CanalData {
+  nome: string;
+  quantidade: number;
+  receita: number;
+  percentual: number;
+}
+
 export default function Home() {
   const [sales, setSales] = useState<number | null>(null);
   const [revenue, setRevenue] = useState<number | null>(null);
   const [produtoMaisVendido, setProdutoMaisVendido] = useState<{ nome: string | null; total: number } | null>(null);
   const [vendasTurno, setVendasTurno] = useState<VendasTurno | null>(null);
+  const [ticketMedio, setTicketMedio] = useState<TicketMedio | null>(null);
+  const [vendasCanal, setVendasCanal] = useState<CanalData[]>([]);
   const [period, setPeriod] = useState<Period>('anual');
   const [showRanking, setShowRanking] = useState(false);
   const [produtosRanking, setProdutosRanking] = useState<ProdutoRanking[]>([]);
   const [loadingRanking, setLoadingRanking] = useState(false);
+  const [loadingTicketMedio, setLoadingTicketMedio] = useState(false);
   
   const [salesPosition, setSalesPosition] = useState<Position>({ x: 0, y: 0 });
   const [revenuePosition, setRevenuePosition] = useState<Position>({ x: 0, y: 0 });
   const [produtoPosition, setProdutoPosition] = useState<Position>({ x: 0, y: 0 });
   const [turnoPosition, setTurnoPosition] = useState<Position>({ x: 0, y: 0 });
+  const [ticketMedioPosition, setTicketMedioPosition] = useState<Position>({ x: 0, y: 0 });
+  const [canalPosition, setCanalPosition] = useState<Position>({ x: 0, y: 0 });
   
-  const [isDragging, setIsDragging] = useState<'sales' | 'revenue' | 'produto' | 'turno' | null>(null);
+  const [isDragging, setIsDragging] = useState<'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal' | null>(null);
   const [selectedRestaurant, setSelectedRestaurant] = useState<number | null>(null);
   
   // Refs para medir dimensões dos cards
@@ -47,13 +65,17 @@ export default function Home() {
   const revenueRef = useRef<HTMLDivElement>(null);
   const produtoRef = useRef<HTMLDivElement>(null);
   const turnoRef = useRef<HTMLDivElement>(null);
+  const ticketMedioRef = useRef<HTMLDivElement>(null);
+  const canalRef = useRef<HTMLDivElement>(null);
   
   // Estado para controlar quais cards estão visíveis
   const [visibleCards, setVisibleCards] = useState({
     sales: true,
     revenue: true,
     produto: true,
-    turno: true
+    turno: true,
+    ticketMedio: true,
+    canal: true
   });
   
   const [showCardsDropdown, setShowCardsDropdown] = useState(false);
@@ -62,23 +84,31 @@ export default function Home() {
   useEffect(() => {
     if (selectedRestaurant) {
       const fetchData = async () => {
+        setLoadingTicketMedio(true);
         try {
-          const [salesRes, revenueRes, produtoRes, turnoRes] = await Promise.all([
+          const [salesRes, revenueRes, produtoRes, turnoRes, ticketMedioRes, canalRes] = await Promise.all([
             fetch(`/api/restaurante/${selectedRestaurant}/vendas?period=${period}`),
             fetch(`/api/restaurante/${selectedRestaurant}/faturamento?period=${period}`),
             fetch(`/api/restaurante/${selectedRestaurant}/produto-mais-vendido?period=${period}`),
-            fetch(`/api/restaurante/${selectedRestaurant}/vendas-por-turno?period=${period}`)
+            fetch(`/api/restaurante/${selectedRestaurant}/vendas-por-turno?period=${period}`),
+            fetch(`/api/restaurante/${selectedRestaurant}/ticket-medio?period=${period}`),
+            fetch(`/api/restaurante/${selectedRestaurant}/vendas-por-canal?period=${period}`)
           ]);
           
           const salesData = await salesRes.json();
           const revenueData = await revenueRes.json();
           const produtoData = await produtoRes.json();
           const turnoData = await turnoRes.json();
+          const ticketMedioData = await ticketMedioRes.json();
+          const canalData = await canalRes.json();
           
           setSales(salesData.total);
           setRevenue(parseFloat(revenueData.revenue));
           setProdutoMaisVendido({ nome: produtoData.nome, total: produtoData.total });
           setVendasTurno({ manha: turnoData.manha, tarde: turnoData.tarde, noite: turnoData.noite });
+          setTicketMedio({ ticketMedio: ticketMedioData.ticketMedio, variacao: ticketMedioData.variacao });
+          setVendasCanal(canalData);
+          setLoadingTicketMedio(false);
           
           // Se o ranking estiver aberto, atualizar os dados
           if (showRanking) {
@@ -96,13 +126,13 @@ export default function Home() {
           }
         } catch (e) {
           console.error('Erro ao recarregar dados:', e);
+          setLoadingTicketMedio(false);
         }
       };
       
       fetchData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period]);
+  }, [period, selectedRestaurant]);
 
   function handleSelect(
     salesVal: number | null, 
@@ -121,6 +151,8 @@ export default function Home() {
     setRevenuePosition({ x: 0, y: 0 });
     setProdutoPosition({ x: 0, y: 0 });
     setTurnoPosition({ x: 0, y: 0 });
+    setTicketMedioPosition({ x: 0, y: 0 });
+    setCanalPosition({ x: 0, y: 0 });
     // Reset do ranking
     setShowRanking(false);
     setProdutosRanking([]);
@@ -128,11 +160,11 @@ export default function Home() {
   }
 
   // Funções para gerenciar visibilidade dos cards
-  const removeCard = (cardType: 'sales' | 'revenue' | 'produto' | 'turno') => {
+  const removeCard = (cardType: 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal') => {
     setVisibleCards(prev => ({ ...prev, [cardType]: false }));
   };
 
-  const addCard = (cardType: 'sales' | 'revenue' | 'produto' | 'turno') => {
+  const addCard = (cardType: 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal') => {
     setVisibleCards(prev => ({ ...prev, [cardType]: true }));
     setShowCardsDropdown(false);
   };
@@ -160,7 +192,7 @@ export default function Home() {
     setShowRanking(!showRanking);
   };
 
-  const handleMouseDown = (type: 'sales' | 'revenue' | 'produto' | 'turno', e: React.MouseEvent) => {
+  const handleMouseDown = (type: 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal', e: React.MouseEvent) => {
     // Verificar se o clique foi no botão de deletar
     const target = e.target as HTMLElement;
     if (target.classList.contains('delete-button')) {
@@ -179,7 +211,9 @@ export default function Home() {
       type === 'sales' ? salesPosition : 
       type === 'revenue' ? revenuePosition :
       type === 'produto' ? produtoPosition :
-      turnoPosition;
+      type === 'turno' ? turnoPosition :
+      type === 'ticketMedio' ? ticketMedioPosition :
+      canalPosition;
     
     const mouseStartX = e.clientX;
     const mouseStartY = e.clientY;
@@ -193,7 +227,9 @@ export default function Home() {
       type === 'sales' ? salesRef.current : 
       type === 'revenue' ? revenueRef.current :
       type === 'produto' ? produtoRef.current :
-      turnoRef.current;
+      type === 'turno' ? turnoRef.current :
+      type === 'ticketMedio' ? ticketMedioRef.current :
+      canalRef.current;
     
     if (!cardRef) return;
     
@@ -258,6 +294,10 @@ export default function Home() {
         setProdutoPosition({ x: constrainedX, y: constrainedY });
       } else if (type === 'turno') {
         setTurnoPosition({ x: constrainedX, y: constrainedY });
+      } else if (type === 'ticketMedio') {
+        setTicketMedioPosition({ x: constrainedX, y: constrainedY });
+      } else if (type === 'canal') {
+        setCanalPosition({ x: constrainedX, y: constrainedY });
       }
     };
 
@@ -272,7 +312,16 @@ export default function Home() {
   };
 
   return (
-		<div className="min-h-screen w-full bg-white relative">
+		<div 
+			className="min-h-screen w-full bg-white relative"
+			style={{
+				backgroundImage: 'url("/simbolo_nola.png")',
+				backgroundRepeat: 'no-repeat',
+				backgroundPosition: 'center center',
+				backgroundSize: '150px 150px',
+				backgroundAttachment: 'fixed'
+			}}
+		>
 			<main className="flex flex-col px-20 py-4">
 				{/* Linha superior: Restaurante (esquerda) e Período (direita) - SEM CARDS */}
 				<div className="flex justify-between items-center w-full mb-2">
@@ -323,13 +372,28 @@ export default function Home() {
 										Vendas por Turno
 									</button>
 								)}
-									{(visibleCards.sales && visibleCards.revenue && visibleCards.produto && visibleCards.turno) && (
+								{!visibleCards.ticketMedio && (
+									<button
+										onClick={() => addCard('ticketMedio')}
+										className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm text-zinc-900"
+									>
+										Ticket Médio
+									</button>
+								)}
+								{!visibleCards.canal && (
+									<button
+										onClick={() => addCard('canal')}
+										className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm text-zinc-900"
+									>
+										Vendas por Canal
+									</button>
+								)}
+									{(visibleCards.sales && visibleCards.revenue && visibleCards.produto && visibleCards.turno && visibleCards.ticketMedio && visibleCards.canal) && (
 										<div className="px-3 py-2 text-sm text-zinc-400 text-center">Todos os cards estão visíveis</div>
 									)}
 								</div>
 							)}
 						</div>
-						<span className="text-sm text-zinc-700">período</span>
 						<PeriodSelector selected={period} onSelect={setPeriod} />
 					</div>
 				</div>
@@ -338,7 +402,7 @@ export default function Home() {
 				<div className="w-screen h-px bg-black -mx-20 my-0"></div>
 
 				{/* Cards arrastáveis em grid 2x3 */}
-				{(sales !== null || revenue !== null || produtoMaisVendido || vendasTurno) && (
+				{(sales !== null || revenue !== null || produtoMaisVendido || vendasTurno || ticketMedio || vendasCanal.length > 0) && (
 					<div className="grid grid-cols-3 gap-6 w-full mt-0 items-start content-start">
 						{/* Card 1: Vendas */}
 						{visibleCards.sales && (
@@ -492,15 +556,90 @@ export default function Home() {
 							</Card>
 						)}
 						
+						{/* Card 5: Ticket Médio */}
+						{visibleCards.ticketMedio && (
+							<Card 
+								ref={ticketMedioRef}
+								data-card-type="ticketMedio"
+								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative self-start"
+								style={{ 
+									transform: `translate(${ticketMedioPosition.x}px, ${ticketMedioPosition.y}px)`,
+									zIndex: isDragging === 'ticketMedio' ? 1000 : 1
+								}}
+								onMouseDown={(e) => handleMouseDown('ticketMedio', e)}
+							>
+								<button
+									onClick={() => removeCard('ticketMedio')}
+									className="delete-button absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+								>
+									✕
+								</button>
+								<div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
+									Ticket Médio {period === 'mensal' ? 'do mês' : 'anual'}
+								</div>
+								{loadingTicketMedio ? (
+									<div className="text-sm text-zinc-400 text-center py-4">
+										Carregando dados...
+									</div>
+								) : ticketMedio ? (
+									<div>
+										<div className="text-3xl font-semibold text-[--color-primary] mb-2">
+											R$ {ticketMedio.ticketMedio.toFixed(2).replace('.', ',')}
+										</div>
+										<div className="flex items-center gap-2 text-sm">
+											{ticketMedio.variacao !== 0 && (
+												<>
+													<span className={ticketMedio.variacao >= 0 ? 'text-green-600' : 'text-red-600'}>
+														{ticketMedio.variacao >= 0 ? '▲' : '▼'}
+													</span>
+													<span className={ticketMedio.variacao >= 0 ? 'text-green-600' : 'text-red-600'}>
+														{Math.abs(ticketMedio.variacao).toFixed(1)}% vs período anterior
+													</span>
+												</>
+											)}
+										</div>
+									</div>
+								) : (
+									<div className="text-3xl font-semibold text-[--color-primary]">—</div>
+								)}
+							</Card>
+						)}
+						
+						{/* Card 6: Vendas por Canal */}
+						{visibleCards.canal && (
+							<Card 
+								ref={canalRef}
+								data-card-type="canal"
+								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative self-start"
+								style={{ 
+									transform: `translate(${canalPosition.x}px, ${canalPosition.y}px)`,
+									zIndex: isDragging === 'canal' ? 1000 : 1
+								}}
+								onMouseDown={(e) => handleMouseDown('canal', e)}
+							>
+								<button
+									onClick={() => removeCard('canal')}
+									className="delete-button absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+								>
+									✕
+								</button>
+								{vendasCanal.length > 0 ? (
+									<VendasPorCanalChart canais={vendasCanal} />
+								) : (
+									<div className="text-sm text-zinc-400 text-center">
+										Sem dados disponíveis
+									</div>
+								)}
+							</Card>
+						)}
+						
 						{/* Espaços vazios para completar grid 2x3 */}
-						<div></div>
-						<div></div>
 					</div>
 				)}
 			</main>
 			
 			<footer className="pointer-events-none absolute bottom-4 right-6 text-right leading-5">
-				<div className="text-[10px] sm:text-xs font-medium tracking-wide text-[--color-primary]">desafio técnico</div>
+				<div className="text-[10px] sm:text-xs font-semibold tracking-wide text-zinc-300">desafio técnico</div>
 				<div className="text-[10px] sm:text-xs text-zinc-500">feito por Vitor Lacerda</div>
 			</footer>
 		</div>

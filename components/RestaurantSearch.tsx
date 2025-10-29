@@ -33,17 +33,19 @@ export default function RestaurantSearch({ onSelect, period }: RestaurantSearchP
     setLoading(true);
 
     try {
-      const [salesRes, revenueRes, produtoRes, turnoRes] = await Promise.all([
+      const [salesRes, revenueRes, produtoRes, turnoRes, ticketMedioRes] = await Promise.all([
         fetch(`/api/restaurante/${restaurantId}/vendas?period=${period}`),
         fetch(`/api/restaurante/${restaurantId}/faturamento?period=${period}`),
         fetch(`/api/restaurante/${restaurantId}/produto-mais-vendido?period=${period}`),
-        fetch(`/api/restaurante/${restaurantId}/vendas-por-turno?period=${period}`)
+        fetch(`/api/restaurante/${restaurantId}/vendas-por-turno?period=${period}`),
+        fetch(`/api/restaurante/${restaurantId}/ticket-medio?period=${period}`)
       ]);
       
       const salesData = await salesRes.json();
       const revenueData = await revenueRes.json();
       const produtoData = await produtoRes.json();
       const turnoData = await turnoRes.json();
+      const ticketMedioData = await ticketMedioRes.json();
       
       onSelect(
         salesData.total, 
