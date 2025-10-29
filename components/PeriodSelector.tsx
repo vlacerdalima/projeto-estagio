@@ -14,10 +14,10 @@ export default function PeriodSelector({ selected, onSelect }: PeriodSelectorPro
     <div className="flex gap-1">
       <button
         onClick={() => onSelect('anual')}
-        className={`px-3 py-1 text-sm font-medium transition-colors ${
+        className={`px-3 py-1.5 text-sm font-medium transition-colors touch-manipulation ${
           selected === 'anual' 
             ? 'text-[#fa8072] border-b-2 border-[#fa8072]' 
-            : 'text-zinc-600 hover:text-[#fa8072]'
+            : 'text-zinc-600 hover:text-[#fa8072] active:opacity-70'
         }`}
       >
         anual
@@ -25,10 +25,10 @@ export default function PeriodSelector({ selected, onSelect }: PeriodSelectorPro
       <span className="text-zinc-400">|</span>
       <button
         onClick={() => onSelect('mensal')}
-        className={`px-3 py-1 text-sm font-medium transition-colors ${
+        className={`px-3 py-1.5 text-sm font-medium transition-colors touch-manipulation ${
           selected === 'mensal' 
             ? 'text-[#fa8072] border-b-2 border-[#fa8072]' 
-            : 'text-zinc-600 hover:text-[#fa8072]'
+            : 'text-zinc-600 hover:text-[#fa8072] active:opacity-70'
         }`}
       >
         mensal

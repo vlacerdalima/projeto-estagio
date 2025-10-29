@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
@@ -15,6 +15,24 @@ export default function RestaurantSearch({ onSelect, period }: RestaurantSearchP
   const [selected, setSelected] = useState<number | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: Event) => {
+      const target = event.target as HTMLElement;
+      if (showDropdown && dropdownRef.current && !dropdownRef.current.contains(target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showDropdown]);
 
   useEffect(() => {
     fetch('/api/restaurantes')
@@ -63,19 +81,19 @@ export default function RestaurantSearch({ onSelect, period }: RestaurantSearchP
   }
 
   return (
-    <div className="relative">
+    <div className="relative w-full" ref={dropdownRef}>
       <button
         onClick={() => setShowDropdown(!showDropdown)}
         disabled={loading}
-        className="text-sm font-medium text-[#fa8072] hover:underline disabled:opacity-50"
+        className="text-sm font-medium text-[#fa8072] hover:underline active:opacity-70 disabled:opacity-50 w-full text-left truncate touch-manipulation"
       >
         {selected
-          ? restaurants.find(r => r.id === selected)?.name
+          ? restaurants.find(r => r.id === selected)?.name || 'Selecionar Restaurante'
           : 'Selecionar Restaurante'}
         {loading && ' (carregando...)'}
       </button>
         {showDropdown && (
-          <Card className="absolute z-50 mt-2 w-64 md:w-64 sm:w-72 left-0 md:left-auto overflow-y-auto border border-[--color-primary]/30 bg-white shadow-lg max-w-[calc(100vw-2rem)]">
+          <Card className="absolute z-50 mt-2 w-full sm:w-72 left-0 overflow-y-auto border border-[--color-primary]/30 bg-white shadow-lg max-w-[calc(100vw-2rem)]">
             <input
               type="text"
               placeholder="Buscar restaurante..."
@@ -88,7 +106,7 @@ export default function RestaurantSearch({ onSelect, period }: RestaurantSearchP
                 <button
                   key={r.id}
                   onClick={() => handleSelect(r.id)}
-                  className="w-full px-4 py-2 text-left hover:bg-[--color-accent] transition-colors text-zinc-800"
+                  className="w-full px-4 py-2.5 text-left hover:bg-[--color-accent] active:bg-gray-200 transition-colors text-zinc-800 touch-manipulation"
                 >
                   {r.name}
                 </button>

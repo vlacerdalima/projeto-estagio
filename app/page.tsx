@@ -69,16 +69,58 @@ export default function Home() {
   const canalRef = useRef<HTMLDivElement>(null);
   
   // Estado para controlar quais cards estão visíveis
+  // Inicialmente todos ocultos - usuário deve escolher quais mostrar
   const [visibleCards, setVisibleCards] = useState({
-    sales: true,
-    revenue: true,
-    produto: true,
-    turno: true,
-    ticketMedio: true,
-    canal: true
+    sales: false,
+    revenue: false,
+    produto: false,
+    turno: false,
+    ticketMedio: false,
+    canal: false
   });
   
   const [showCardsDropdown, setShowCardsDropdown] = useState(false);
+  const [isSmartphone, setIsSmartphone] = useState(false);
+
+  // Detectar se é smartphone (apenas telas muito pequenas com touch)
+  useEffect(() => {
+    const checkSmartphone = () => {
+      // Verifica largura da tela
+      const width = window.innerWidth;
+      const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isVerySmallScreen = width < 480; // Apenas telas muito pequenas (smartphones pequenos)
+      
+      // User agent para detectar smartphones (não tablets)
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isPhone = /android.*mobile|webos|iphone|ipod|blackberry|iemobile|opera.*mini/i.test(userAgent);
+      const isTablet = /ipad|android(?!.*mobile)/i.test(userAgent);
+      
+      // Considera smartphone apenas se: tela muito pequena (<480px) E é phone (não tablet) E tem touch
+      // Isso permite que tablets e telas maiores vejam os cards
+      setIsSmartphone(isVerySmallScreen && isPhone && !isTablet && isTouch);
+    };
+
+    checkSmartphone();
+    window.addEventListener('resize', checkSmartphone);
+    return () => window.removeEventListener('resize', checkSmartphone);
+  }, []);
+
+  // Fechar dropdown de cards ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: Event) => {
+      const target = event.target as HTMLElement;
+      if (showCardsDropdown && !target.closest('.cards-dropdown-container')) {
+        setShowCardsDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showCardsDropdown]);
 
   // Recarregar dados quando o período mudar
   useEffect(() => {
@@ -333,6 +375,15 @@ export default function Home() {
       return;
     }
     
+    // Verificar se o clique foi dentro da tabela de ranking (para permitir scroll)
+    let element = target;
+    while (element && element !== e.currentTarget) {
+      if (element.classList.contains('ranking-table-container')) {
+        return; // Não iniciar arraste se estiver na tabela de ranking
+      }
+      element = element.parentElement as HTMLElement;
+    }
+    
     if (e.button !== 0) return; // Apenas botão esquerdo do mouse
     e.preventDefault();
     
@@ -346,6 +397,15 @@ export default function Home() {
       e.stopPropagation();
       removeCard(type);
       return;
+    }
+    
+    // Verificar se o toque foi dentro da tabela de ranking (para permitir scroll)
+    let element = target;
+    while (element && element !== e.currentTarget) {
+      if (element.classList.contains('ranking-table-container')) {
+        return; // Não iniciar arraste se estiver na tabela de ranking
+      }
+      element = element.parentElement as HTMLElement;
     }
     
     if (e.touches.length > 0) {
@@ -368,66 +428,88 @@ export default function Home() {
 		>
 			<main className="flex flex-col px-4 md:px-20 py-4">
 				{/* Linha superior: Unidade (esquerda) e Período (direita) - SEM CARDS */}
-				<div className="flex flex-col md:flex-row md:justify-between md:items-center w-full mb-2 gap-3 md:gap-0">
-					<div className="flex items-center gap-3">
-						<span className="text-sm text-zinc-700">Unidade</span>
-						<RestaurantSearch onSelect={handleSelect} period={period} />
+				<div className="flex flex-col gap-3 w-full mb-2">
+					{/* Linha 1: Unidade */}
+					<div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full">
+						<span className="text-sm text-zinc-700 whitespace-nowrap">Unidade</span>
+						<div className="flex-1 min-w-0">
+							<RestaurantSearch onSelect={handleSelect} period={period} />
+						</div>
 					</div>
-					<div className="flex items-center gap-3">
+					{/* Linha 2: Cards e Período */}
+					<div className="flex items-center justify-between gap-3 w-full">
 						{/* Botão Cards com dropdown */}
-						<div className="relative">
+						<div className="relative cards-dropdown-container">
 							<button
 								onClick={() => setShowCardsDropdown(!showCardsDropdown)}
-								className="px-3 py-1 bg-[#fa8072] text-white rounded-md text-sm font-medium hover:bg-[#fa8072]/90 transition-colors shadow-sm"
+								className="px-3 py-1.5 bg-[#fa8072] text-white rounded-md text-sm font-medium hover:bg-[#fa8072]/90 active:bg-[#fa8072]/80 transition-colors shadow-sm touch-manipulation"
 							>
 								cards
 							</button>
 							{showCardsDropdown && (
-								<div className="absolute right-0 mt-2 bg-white border border-[--color-primary]/30 rounded-md shadow-lg z-50 p-2 w-48 md:w-48">
+								<div className="absolute left-0 mt-2 bg-white border border-[--color-primary]/30 rounded-md shadow-lg z-50 p-2 w-[180px] sm:w-48 max-w-[calc(100vw-3rem)] max-h-[70vh] overflow-y-auto">
 								{!visibleCards.sales && (
 									<button
-										onClick={() => addCard('sales')}
-										className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm text-zinc-900"
+										onClick={() => {
+											addCard('sales');
+											setShowCardsDropdown(false);
+										}}
+										className="w-full text-left px-3 py-2.5 hover:bg-gray-100 active:bg-gray-200 rounded text-sm text-zinc-900 touch-manipulation"
 									>
 										Vendas
 									</button>
 								)}
 								{!visibleCards.revenue && (
 									<button
-										onClick={() => addCard('revenue')}
-										className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm text-zinc-900"
+										onClick={() => {
+											addCard('revenue');
+											setShowCardsDropdown(false);
+										}}
+										className="w-full text-left px-3 py-2.5 hover:bg-gray-100 active:bg-gray-200 rounded text-sm text-zinc-900 touch-manipulation"
 									>
 										Faturamento
 									</button>
 								)}
 								{!visibleCards.produto && (
 									<button
-										onClick={() => addCard('produto')}
-										className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm text-zinc-900"
+										onClick={() => {
+											addCard('produto');
+											setShowCardsDropdown(false);
+										}}
+										className="w-full text-left px-3 py-2.5 hover:bg-gray-100 active:bg-gray-200 rounded text-sm text-zinc-900 touch-manipulation"
 									>
 										Produto Mais Vendido
 									</button>
 								)}
 								{!visibleCards.turno && (
 									<button
-										onClick={() => addCard('turno')}
-										className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm text-zinc-900"
+										onClick={() => {
+											addCard('turno');
+											setShowCardsDropdown(false);
+										}}
+										className="w-full text-left px-3 py-2.5 hover:bg-gray-100 active:bg-gray-200 rounded text-sm text-zinc-900 touch-manipulation"
 									>
 										Vendas por Turno
 									</button>
 								)}
 								{!visibleCards.ticketMedio && (
 									<button
-										onClick={() => addCard('ticketMedio')}
-										className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm text-zinc-900"
+										onClick={() => {
+											addCard('ticketMedio');
+											setShowCardsDropdown(false);
+										}}
+										className="w-full text-left px-3 py-2.5 hover:bg-gray-100 active:bg-gray-200 rounded text-sm text-zinc-900 touch-manipulation"
 									>
 										Ticket Médio
 									</button>
 								)}
 								{!visibleCards.canal && (
 									<button
-										onClick={() => addCard('canal')}
-										className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm text-zinc-900"
+										onClick={() => {
+											addCard('canal');
+											setShowCardsDropdown(false);
+										}}
+										className="w-full text-left px-3 py-2.5 hover:bg-gray-100 active:bg-gray-200 rounded text-sm text-zinc-900 touch-manipulation"
 									>
 										Vendas por Canal
 									</button>
@@ -445,8 +527,8 @@ export default function Home() {
 				{/* Linha divisória */}
 				<div className="w-screen h-px bg-black -mx-4 md:-mx-20 my-0"></div>
 
-				{/* Cards arrastáveis em grid responsivo */}
-				{(sales !== null || revenue !== null || produtoMaisVendido || vendasTurno || ticketMedio || vendasCanal.length > 0) && (
+				{/* Cards arrastáveis em grid responsivo - Aparecem quando escolhidos pelo usuário */}
+				{(visibleCards.sales || visibleCards.revenue || visibleCards.produto || visibleCards.turno || visibleCards.ticketMedio || visibleCards.canal) && (
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-full mt-0 items-start content-start">
 						{/* Card 1: Vendas */}
 						{visibleCards.sales && (
@@ -655,7 +737,7 @@ export default function Home() {
 									</button>
 								</div>
 								{showRanking && (
-									<div className="absolute top-full left-0 right-0 mt-4 bg-white border border-[--color-primary]/30 rounded-b-lg shadow-lg p-4 max-h-[400px] overflow-y-auto z-50">
+									<div className="ranking-table-container absolute top-full left-0 right-0 mt-4 bg-white border border-[--color-primary]/30 rounded-b-lg shadow-lg p-4 max-h-[400px] overflow-y-auto z-50">
 										<div className="text-sm font-semibold text-zinc-900 mb-3">Ranking Completo</div>
 										<div className="space-y-1">
 											{loadingRanking ? (
