@@ -265,6 +265,61 @@ restaurante [dropdown]  [cards button]  período [anual | mensal]
 
 ---
 
+## FUNCIONALIDADES RECÉM-IMPLEMENTADAS
+
+### 1. LINHA DIVISÓRIA
+- Linha preta fina separando área de controle (restaurante, período, cards) da área de cards
+- Estende de ponta a ponta da tela (`w-screen`)
+- Cards não podem ultrapassar esta linha (limite superior)
+
+### 2. RANKING DE PRODUTOS
+- Card de "Produto Mais Vendido" possui seta ▶/▼
+- Ao clicar, expande mostrando ranking completo
+- Exibe todos os produtos ordenados por quantidade vendida
+- Atualiza automaticamente quando muda período (mensal/anual)
+- Posicionamento absoluto para não afetar layout dos outros cards
+- Estado de loading durante carregamento dos dados
+
+**API:** `/api/restaurante/[id]/produtos-ranking`
+
+### 3. LIMITES DE ARRASTO
+Os cards têm limites em todas as direções:
+- **Superior:** Não pode ultrapassar linha divisória
+- **Inferior:** Não pode sair pela parte inferior da janela
+- **Esquerda/Direita:** Não pode sair pelas bordas laterais da tela
+
+### 4. SISTEMA DE LIMITADORES
+```typescript
+// Limite vertical (topo e fundo)
+const cardTopAfterTranslate = cardRect.top + (newY - currentPosition.y);
+if (cardTopAfterTranslate < lineY) {
+  constrainedY = currentPosition.y - (cardRect.top - lineY);
+}
+
+const cardBottomAfterTranslate = cardRect.bottom + (newY - currentPosition.y);
+if (cardBottomAfterTranslate > windowHeight) {
+  constrainedY = currentPosition.y + (windowHeight - cardRect.bottom);
+}
+
+// Limite horizontal (esquerda e direita)
+if (newCardLeft < 0) {
+  constrainedX = currentPosition.x - cardLeft;
+} else if (newCardRight > windowWidth) {
+  constrainedX = currentPosition.x + (windowWidth - (cardLeft + cardWidth));
+}
+```
+
+### 5. GRID COM ALINHAMENTO
+- Grid usa `items-start` e `content-start` para alinhamento consistente
+- Cards usam `self-start` individualmente
+- Cards não se expandem juntos quando um tem conteúdo extra
+
+### 6. CORREÇÕES DE VISUAL
+- Centralização dos dados no card de vendas por turno
+- Cores mais escuras e visíveis no ranking de produtos
+- Título "Ranking Completo" em negrito e maiúsculo
+
+---
 ## FUTURAS MELHORIAS
 
 Possíveis extensões do sistema:
@@ -275,6 +330,7 @@ Possíveis extensões do sistema:
 4. **Filtros avançados**: Mostrar apenas cards específicos por período
 5. **Templates**: Salvar layouts customizados
 6. **Redução da complexidade dos cards**: Filtrar por tipo de prato ou mostrar o top 10 ou 100 , invés de todos.
+7. **Histórico de posições**: Salvar posições dos cards depois de arrastar
 
 ---
 

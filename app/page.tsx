@@ -42,6 +42,12 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState<'sales' | 'revenue' | 'produto' | 'turno' | null>(null);
   const [selectedRestaurant, setSelectedRestaurant] = useState<number | null>(null);
   
+  // Refs para medir dimensões dos cards
+  const salesRef = useRef<HTMLDivElement>(null);
+  const revenueRef = useRef<HTMLDivElement>(null);
+  const produtoRef = useRef<HTMLDivElement>(null);
+  const turnoRef = useRef<HTMLDivElement>(null);
+  
   // Estado para controlar quais cards estão visíveis
   const [visibleCards, setVisibleCards] = useState({
     sales: true,
@@ -181,20 +187,77 @@ export default function Home() {
     // Calcula o offset (distância entre o ponto de clique e a origem do card)
     const offsetX = mouseStartX - currentPosition.x;
     const offsetY = mouseStartY - currentPosition.y;
+    
+    // Capturar dimensões originais do card
+    const cardRef = 
+      type === 'sales' ? salesRef.current : 
+      type === 'revenue' ? revenueRef.current :
+      type === 'produto' ? produtoRef.current :
+      turnoRef.current;
+    
+    if (!cardRef) return;
+    
+    // Armazenar a posição inicial do card no grid (sem transform)
+    const cardRect = cardRef.getBoundingClientRect();
+    const cardLeft = cardRect.left;
+    const cardWidth = cardRect.width;
 
     const handleMouseMove = (e: MouseEvent) => {
       // Nova posição = posição do mouse - offset inicial
       const newX = e.clientX - offsetX;
       const newY = e.clientY - offsetY;
 
+      const windowHeight = window.innerHeight;
+      const windowWidth = window.innerWidth;
+      
+      // Calcular a posição da linha divisória
+      const gridContainer = document.querySelector('.grid');
+      if (!gridContainer) return;
+      
+      const gridRect = gridContainer.getBoundingClientRect();
+      const lineY = gridRect.top; // A linha divisória está logo acima do grid
+      
+      // Limitar o movimento vertical
+      let constrainedY = newY;
+      
+      // Calcular onde o topo do card estaria após o movimento
+      const cardTopAfterTranslate = cardRect.top + (newY - currentPosition.y);
+      
+      // O topo do card não pode ultrapassar a linha divisória
+      if (cardTopAfterTranslate < lineY) {
+        constrainedY = currentPosition.y - (cardRect.top - lineY);
+      }
+      
+      // Limitar o movimento vertical para baixo: card não pode sair pela parte inferior da janela
+      const cardBottomAfterTranslate = cardRect.bottom + (newY - currentPosition.y);
+      if (cardBottomAfterTranslate > windowHeight) {
+        constrainedY = currentPosition.y + (windowHeight - cardRect.bottom);
+      }
+      
+      // Calcular onde o card estaria (cardLeft é a posição original sem transform)
+      const newCardLeft = cardLeft + (newX - currentPosition.x);
+      const newCardRight = newCardLeft + cardWidth;
+      
+      // Calcular o constrangedor X
+      let constrainedX = newX;
+      
+      // Limitar pela esquerda (borda esquerda pode ir até 0)
+      if (newCardLeft < 0) {
+        constrainedX = currentPosition.x - cardLeft;
+      }
+      // Limitar pela direita (borda direita pode ir até windowWidth)
+      else if (newCardRight > windowWidth) {
+        constrainedX = currentPosition.x + (windowWidth - (cardLeft + cardWidth));
+      }
+
       if (type === 'sales') {
-        setSalesPosition({ x: newX, y: newY });
+        setSalesPosition({ x: constrainedX, y: constrainedY });
       } else if (type === 'revenue') {
-        setRevenuePosition({ x: newX, y: newY });
+        setRevenuePosition({ x: constrainedX, y: constrainedY });
       } else if (type === 'produto') {
-        setProdutoPosition({ x: newX, y: newY });
+        setProdutoPosition({ x: constrainedX, y: constrainedY });
       } else if (type === 'turno') {
-        setTurnoPosition({ x: newX, y: newY });
+        setTurnoPosition({ x: constrainedX, y: constrainedY });
       }
     };
 
@@ -210,9 +273,9 @@ export default function Home() {
 
   return (
 		<div className="min-h-screen w-full bg-white relative">
-			<main className="flex flex-col gap-6 px-20 py-8">
+			<main className="flex flex-col px-20 py-4">
 				{/* Linha superior: Restaurante (esquerda) e Período (direita) - SEM CARDS */}
-				<div className="flex justify-between items-center w-full">
+				<div className="flex justify-between items-center w-full mb-2">
 					<div className="flex items-center gap-3">
 						<span className="text-sm text-zinc-700">restaurante</span>
 						<RestaurantSearch onSelect={handleSelect} period={period} />
@@ -271,14 +334,18 @@ export default function Home() {
 					</div>
 				</div>
 
+				{/* Linha divisória */}
+				<div className="w-screen h-px bg-black -mx-20 my-0"></div>
+
 				{/* Cards arrastáveis em grid 2x3 */}
 				{(sales !== null || revenue !== null || produtoMaisVendido || vendasTurno) && (
-					<div className="grid grid-cols-3 gap-6 w-full">
+					<div className="grid grid-cols-3 gap-6 w-full mt-0 items-start content-start">
 						{/* Card 1: Vendas */}
 						{visibleCards.sales && (
 							<Card 
+								ref={salesRef}
 								data-card-type="sales"
-								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative"
+								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative self-start"
 								style={{ 
 									transform: `translate(${salesPosition.x}px, ${salesPosition.y}px)`,
 									zIndex: isDragging === 'sales' ? 1000 : 1
@@ -301,8 +368,9 @@ export default function Home() {
 						{/* Card 2: Faturamento */}
 						{visibleCards.revenue && (
 							<Card 
+								ref={revenueRef}
 								data-card-type="revenue"
-								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative"
+								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative self-start"
 								style={{ 
 									transform: `translate(${revenuePosition.x}px, ${revenuePosition.y}px)`,
 									zIndex: isDragging === 'revenue' ? 1000 : 1
@@ -327,11 +395,12 @@ export default function Home() {
 						{/* Card 3: Produto Mais Vendido */}
 						{visibleCards.produto && (
 							<Card 
+								ref={produtoRef}
 								data-card-type="produto"
-								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative"
+								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative self-start"
 								style={{ 
 									transform: `translate(${produtoPosition.x}px, ${produtoPosition.y}px)`,
-									zIndex: isDragging === 'produto' ? 1000 : 1
+									zIndex: isDragging === 'produto' ? 1000 : (showRanking ? 100 : 1)
 								}}
 								onMouseDown={(e) => handleMouseDown('produto', e)}
 							>
@@ -363,25 +432,25 @@ export default function Home() {
 									</button>
 								</div>
 								{showRanking && (
-									<div className="mt-4 border-t border-zinc-200 pt-4">
-										<div className="text-xs font-medium text-[--color-muted-foreground] mb-2">Ranking Completo</div>
-										<div className="max-h-48 overflow-y-auto space-y-1">
+									<div className="absolute top-full left-0 right-0 mt-4 bg-white border border-[--color-primary]/30 rounded-b-lg shadow-lg p-4 max-h-[400px] overflow-y-auto z-50">
+										<div className="text-sm font-semibold text-zinc-900 mb-3">Ranking Completo</div>
+										<div className="space-y-1">
 											{loadingRanking ? (
-												<div className="text-xs text-zinc-400 text-center py-4">
+												<div className="text-xs text-zinc-500 text-center py-4">
 													Carregando dados...
 												</div>
 											) : produtosRanking.length > 0 ? (
 												produtosRanking.map((produto, index) => (
 													<div key={index} className="flex justify-between items-center text-sm py-1">
 														<div className="flex items-center gap-2">
-															<span className="text-xs text-zinc-400 w-5">{index + 1}.</span>
-															<span className="font-medium text-zinc-700">{produto.nome}</span>
+															<span className="text-xs text-zinc-500 w-5">{index + 1}.</span>
+															<span className="font-semibold text-zinc-900">{produto.nome}</span>
 														</div>
-														<span className="text-[--color-primary] font-semibold">{produto.total}</span>
+														<span className="text-[#fa8072] font-bold text-base">{produto.total}</span>
 													</div>
 												))
 											) : (
-												<div className="text-xs text-zinc-400 text-center py-2">
+												<div className="text-xs text-zinc-500 text-center py-2">
 													Sem dados disponíveis
 												</div>
 											)}
@@ -394,8 +463,9 @@ export default function Home() {
 						{/* Card 4: Vendas por Turno */}
 						{visibleCards.turno && (
 							<Card 
+								ref={turnoRef}
 								data-card-type="turno"
-								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative"
+								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative self-start"
 								style={{ 
 									transform: `translate(${turnoPosition.x}px, ${turnoPosition.y}px)`,
 									zIndex: isDragging === 'turno' ? 1000 : 1
