@@ -1,6 +1,6 @@
 # Dívida Técnica - Posicionamento dos Cards
 
-## Data: 2025
+## Data: 29/10
 
 ## Problema Identificado
 
