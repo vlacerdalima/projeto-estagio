@@ -360,6 +360,169 @@ Total de 6 cards no sistema:
 - Todas as legendas e nomes de canais em cor branca
 - Percentuais e quantidades de pedidos em cores mais claras
 
+### 13. RESPONSIVIDADE MOBILE (MOBILE-FRIENDLY)
+A aplicação é totalmente responsiva e funciona corretamente em dispositivos móveis.
+
+#### LAYOUT RESPONSIVO
+
+**Breakpoints Tailwind:**
+- **Mobile (< 768px)**: Layout em 1 coluna, padding reduzido
+- **Tablet (768px - 1024px)**: Layout em 2 colunas
+- **Desktop (≥ 1024px)**: Layout em 3 colunas completo
+
+**Grid Adaptativo:**
+```tsx
+className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
+```
+- Mobile: 1 coluna (todos os cards empilhados verticalmente)
+- Tablet: 2 colunas (melhor distribuição)
+- Desktop: 3 colunas (layout completo)
+
+**Padding Responsivo:**
+- Mobile: `px-4` (16px de cada lado)
+- Desktop: `md:px-20` (80px de cada lado)
+
+**Menu Superior:**
+- Mobile: Layout vertical (`flex-col`)
+- Desktop: Layout horizontal (`md:flex-row`)
+
+**Tamanhos de Texto:**
+- Mobile: `text-xl` para valores grandes
+- Desktop: `md:text-3xl` para melhor legibilidade em telas grandes
+
+**Padding dos Cards:**
+- Mobile: `p-4` (espaçamento interno menor)
+- Desktop: `md:p-6` (espaçamento interno maior)
+
+#### SUPORTE A TOUCH EVENTS (DRAG AND DROP)
+
+O sistema de arrastar e soltar funciona tanto com **mouse** quanto com **toque** em dispositivos móveis.
+
+**Implementação Dual (Mouse + Touch):**
+```typescript
+// Função reutilizável para ambos
+const startDrag = (type, clientX, clientY) => {
+  // Lógica comum de arraste
+};
+
+// Handler para mouse
+const handleMouseDown = (type, e: React.MouseEvent) => {
+  startDrag(type, e.clientX, e.clientY);
+};
+
+// Handler para touch
+const handleTouchStart = (type, e: React.TouchEvent) => {
+  if (e.touches.length > 0) {
+    const touch = e.touches[0];
+    startDrag(type, touch.clientX, touch.clientY);
+  }
+};
+```
+
+**Eventos Touch Implementados:**
+- `onTouchStart`: Inicia o arraste ao tocar no card
+- `onTouchMove`: Atualiza a posição enquanto arrasta
+- `onTouchEnd`: Finaliza o arraste ao soltar
+
+**Classe CSS Especial:**
+- `touch-none`: Previne scroll acidental durante o arraste
+- Adicionada em todos os cards arrastáveis
+
+**Proteção contra Scroll:**
+```typescript
+const handleTouchMove = (e: TouchEvent) => {
+  e.preventDefault(); // Previne scroll da página
+  // ... lógica de movimento
+};
+```
+
+#### DROPDOWNS RESPONSIVOS
+
+**Dropdown de Restaurantes:**
+- Largura adaptável: `max-w-[calc(100vw-2rem)]`
+- Não ultrapassa os limites da tela mobile
+- Alinhamento ajustado para mobile (`left-0` em mobile, `left-auto` em desktop)
+
+**Dropdown de Cards:**
+- Mesma largura em mobile e desktop (48 - `w-48`)
+- Posicionamento inteligente para não sair da tela
+
+#### ORDEM DOS CARDS EM MOBILE
+
+Em dispositivos móveis, os cards aparecem em ordem vertical:
+1. **Vendas** (topo)
+2. **Faturamento**
+3. **Vendas por Canal**
+4. **Vendas por Turno**
+5. **Ticket Médio**
+6. **Produto Mais Vendido** (fim)
+
+**Nota:** Como o grid é de 1 coluna em mobile, a ordem vertical corresponde à ordem no código.
+
+#### FOOTER RESPONSIVO
+
+- Mobile: `bottom-2 right-3` (posicionamento mais próximo das bordas)
+- Desktop: `md:bottom-4 md:right-6` (posicionamento original)
+
+#### COMO TESTAR MOBILE
+
+1. **Navegador Desktop:**
+   - Abra DevTools (F12)
+   - Ative modo responsivo (Ctrl+Shift+M)
+   - Selecione um dispositivo ou dimensões customizadas
+   - Teste arrastar cards com mouse (simula toque)
+
+2. **Dispositivo Real:**
+   - Certifique-se que o servidor está escutando em `0.0.0.0` (ver `package.json`)
+   - Acesse pelo IP local da máquina (ex: `http://192.168.1.100:3000`)
+   - Teste arrastar cards com o dedo
+
+3. **Funcionalidades a Testar:**
+   - ✅ Drag and drop funciona com toque
+   - ✅ Layout se adapta corretamente
+   - ✅ Dropdowns não saem da tela
+   - ✅ Menu superior se reorganiza
+   - ✅ Textos são legíveis
+   - ✅ Botões são clicáveis (área de toque adequada)
+
+#### COMPATIBILIDADE
+
+**Funciona em:**
+- ✅ Smartphones (iOS e Android)
+- ✅ Tablets
+- ✅ Navegadores mobile (Chrome, Safari, Firefox)
+- ✅ Telas touch
+
+**Funcionalidades Mantidas:**
+- ✅ Drag and drop (via touch)
+- ✅ Deletar cards (toque no X)
+- ✅ Adicionar cards (toque no dropdown)
+- ✅ Selecionar restaurante
+- ✅ Mudar período (mensal/anual)
+- ✅ Visualizar todos os dados
+
+#### LIMITAÇÕES CONHECIDAS
+
+Nenhuma limitação conhecida. A aplicação foi totalmente adaptada para mobile e todas as funcionalidades estão disponíveis.
+
+#### TROUBLESHOOTING MOBILE
+
+**Problema:** Cards não arrastam no mobile
+- **Solução:** Verifique se a classe `touch-none` está presente no card
+- **Solução:** Verifique se os eventos `onTouchStart`, `onTouchMove`, `onTouchEnd` estão configurados
+
+**Problema:** Layout quebrado em mobile
+- **Solução:** Verifique se as classes responsivas Tailwind estão corretas (`md:`, `lg:`)
+- **Solução:** Limpe o cache do navegador
+
+**Problema:** Dropdown sai da tela
+- **Solução:** Verifique se `max-w-[calc(100vw-2rem)]` está configurado
+- **Solução:** Ajuste o `left-0` ou `left-auto` conforme necessário
+
+**Problema:** Texto muito pequeno/grande
+- **Solução:** Verifique os breakpoints de texto (`text-xl md:text-3xl`)
+- **Solução:** Ajuste conforme necessário nos componentes
+
 ---
 ## FUTURAS MELHORIAS
 
