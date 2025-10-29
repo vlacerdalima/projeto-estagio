@@ -19,12 +19,20 @@ interface VendasTurno {
   noite: number;
 }
 
+interface ProdutoRanking {
+  nome: string;
+  total: number;
+}
+
 export default function Home() {
   const [sales, setSales] = useState<number | null>(null);
   const [revenue, setRevenue] = useState<number | null>(null);
   const [produtoMaisVendido, setProdutoMaisVendido] = useState<{ nome: string | null; total: number } | null>(null);
   const [vendasTurno, setVendasTurno] = useState<VendasTurno | null>(null);
   const [period, setPeriod] = useState<Period>('anual');
+  const [showRanking, setShowRanking] = useState(false);
+  const [produtosRanking, setProdutosRanking] = useState<ProdutoRanking[]>([]);
+  const [loadingRanking, setLoadingRanking] = useState(false);
   
   const [salesPosition, setSalesPosition] = useState<Position>({ x: 0, y: 0 });
   const [revenuePosition, setRevenuePosition] = useState<Position>({ x: 0, y: 0 });
@@ -65,6 +73,21 @@ export default function Home() {
           setRevenue(parseFloat(revenueData.revenue));
           setProdutoMaisVendido({ nome: produtoData.nome, total: produtoData.total });
           setVendasTurno({ manha: turnoData.manha, tarde: turnoData.tarde, noite: turnoData.noite });
+          
+          // Se o ranking estiver aberto, atualizar os dados
+          if (showRanking) {
+            setLoadingRanking(true);
+            try {
+              const rankingRes = await fetch(`/api/restaurante/${selectedRestaurant}/produtos-ranking?period=${period}`);
+              const rankingData = await rankingRes.json();
+              setProdutosRanking(rankingData);
+            } catch (e) {
+              console.error('Erro ao atualizar ranking:', e);
+              setProdutosRanking([]);
+            } finally {
+              setLoadingRanking(false);
+            }
+          }
         } catch (e) {
           console.error('Erro ao recarregar dados:', e);
         }
@@ -92,6 +115,10 @@ export default function Home() {
     setRevenuePosition({ x: 0, y: 0 });
     setProdutoPosition({ x: 0, y: 0 });
     setTurnoPosition({ x: 0, y: 0 });
+    // Reset do ranking
+    setShowRanking(false);
+    setProdutosRanking([]);
+    setLoadingRanking(false);
   }
 
   // Funções para gerenciar visibilidade dos cards
@@ -102,6 +129,29 @@ export default function Home() {
   const addCard = (cardType: 'sales' | 'revenue' | 'produto' | 'turno') => {
     setVisibleCards(prev => ({ ...prev, [cardType]: true }));
     setShowCardsDropdown(false);
+  };
+
+  const fetchRanking = async () => {
+    if (selectedRestaurant) {
+      setLoadingRanking(true);
+      try {
+        const response = await fetch(`/api/restaurante/${selectedRestaurant}/produtos-ranking?period=${period}`);
+        const data = await response.json();
+        setProdutosRanking(data);
+      } catch (e) {
+        console.error('Erro ao buscar ranking:', e);
+        setProdutosRanking([]);
+      } finally {
+        setLoadingRanking(false);
+      }
+    }
+  };
+
+  const toggleRanking = () => {
+    if (!showRanking) {
+      fetchRanking();
+    }
+    setShowRanking(!showRanking);
   };
 
   const handleMouseDown = (type: 'sales' | 'revenue' | 'produto' | 'turno', e: React.MouseEvent) => {
@@ -292,12 +342,52 @@ export default function Home() {
 									✕
 								</button>
 								<div className="text-sm font-medium text-[--color-muted-foreground] mb-2">Produto Mais Vendido</div>
-								<div className="text-lg font-semibold text-[--color-primary] mb-1">
-									{produtoMaisVendido?.nome || '—'}
+								<div className="flex items-start justify-between gap-2">
+									<div className="flex-1">
+										<div className="text-lg font-semibold text-[--color-primary] mb-1">
+											{produtoMaisVendido?.nome || '—'}
+										</div>
+										<div className="text-sm text-[--color-muted-foreground]">
+											{produtoMaisVendido?.total ? `${produtoMaisVendido.total} unidades` : ''}
+										</div>
+									</div>
+									<button
+										onClick={(e) => {
+											e.stopPropagation();
+											toggleRanking();
+										}}
+										className="flex items-center justify-center w-6 h-6 text-zinc-400 hover:text-[#fa8072] transition-colors"
+										title="Ver ranking completo"
+									>
+										{showRanking ? '▼' : '▶'}
+									</button>
 								</div>
-								<div className="text-sm text-[--color-muted-foreground]">
-									{produtoMaisVendido?.total ? `${produtoMaisVendido.total} unidades` : ''}
-								</div>
+								{showRanking && (
+									<div className="mt-4 border-t border-zinc-200 pt-4">
+										<div className="text-xs font-medium text-[--color-muted-foreground] mb-2">Ranking Completo</div>
+										<div className="max-h-48 overflow-y-auto space-y-1">
+											{loadingRanking ? (
+												<div className="text-xs text-zinc-400 text-center py-4">
+													Carregando dados...
+												</div>
+											) : produtosRanking.length > 0 ? (
+												produtosRanking.map((produto, index) => (
+													<div key={index} className="flex justify-between items-center text-sm py-1">
+														<div className="flex items-center gap-2">
+															<span className="text-xs text-zinc-400 w-5">{index + 1}.</span>
+															<span className="font-medium text-zinc-700">{produto.nome}</span>
+														</div>
+														<span className="text-[--color-primary] font-semibold">{produto.total}</span>
+													</div>
+												))
+											) : (
+												<div className="text-xs text-zinc-400 text-center py-2">
+													Sem dados disponíveis
+												</div>
+											)}
+										</div>
+									</div>
+								)}
 							</Card>
 						)}
 						

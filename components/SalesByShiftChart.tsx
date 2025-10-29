@@ -10,7 +10,6 @@ interface SalesByShiftChartProps {
 
 export default function SalesByShiftChart({ manha, tarde, noite }: SalesByShiftChartProps) {
   const maxPercentage = Math.max(manha, tarde, noite, 0);
-  const labelWidth = 16; // tamanho fixo para os labels (ex: "15%")
   
   // Se todos os valores são 0, mostrar mensagem
   if (manha === 0 && tarde === 0 && noite === 0) {
@@ -27,8 +26,8 @@ export default function SalesByShiftChart({ manha, tarde, noite }: SalesByShiftC
   }
   
   const Bar = ({ value, label, bgColor }: { value: number; label: string; bgColor: string }) => (
-    <div className="flex items-center gap-3">
-      <div className="text-sm font-medium" style={{ width: `${labelWidth + 2}ch`, textAlign: 'right' }}>
+    <div className="flex items-center gap-2">
+      <div className="text-sm font-medium w-16 text-left">
         {label}
       </div>
       <div className="flex-1 h-6 bg-gray-100 rounded overflow-hidden">
@@ -40,7 +39,7 @@ export default function SalesByShiftChart({ manha, tarde, noite }: SalesByShiftC
           }}
         />
       </div>
-      <div className="text-sm font-semibold text-[#fa8072]" style={{ width: '3ch', textAlign: 'right' }}>
+      <div className="text-sm font-semibold text-[#fa8072] w-12 text-right">
         {value}%
       </div>
     </div>

@@ -15,7 +15,7 @@ export async function GET(
     const timeColumn = 'created_at'; // Coluna real confirmada!
     const storeIdColumn = 'store_id'; // Coluna real confirmada!
     
-    const filterClause = period === 'mensal' ? "AND s.created_at >= NOW() - INTERVAL '30 days'" : '';
+    const filterClause = period === 'mensal' ? "AND created_at >= NOW() - INTERVAL '30 days'" : '';
     
     try {
       // Usando CTE para evitar problema com alias no GROUP BY

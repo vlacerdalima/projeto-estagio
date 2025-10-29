@@ -274,6 +274,7 @@ Possíveis extensões do sistema:
 3. **Drag & Drop entre seções**: Reordenar cards
 4. **Filtros avançados**: Mostrar apenas cards específicos por período
 5. **Templates**: Salvar layouts customizados
+6. **Redução da complexidade dos cards**: Filtrar por tipo de prato ou mostrar o top 10 ou 100 , invés de todos.
 
 ---
 
