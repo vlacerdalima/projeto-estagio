@@ -192,21 +192,14 @@ export default function Home() {
     setShowRanking(!showRanking);
   };
 
-  const handleMouseDown = (type: 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal', e: React.MouseEvent) => {
-    // Verificar se o clique foi no botão de deletar
-    const target = e.target as HTMLElement;
-    if (target.classList.contains('delete-button')) {
-      e.stopPropagation();
-      removeCard(type);
-      return;
-    }
-    
-    if (e.button !== 0) return; // Apenas botão esquerdo do mouse
-    e.preventDefault();
-    
+  const startDrag = (
+    type: 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal',
+    clientX: number,
+    clientY: number
+  ) => {
     setIsDragging(type);
     
-    // Captura a posição atual do card e do mouse
+    // Captura a posição atual do card
     const currentPosition = 
       type === 'sales' ? salesPosition : 
       type === 'revenue' ? revenuePosition :
@@ -215,12 +208,12 @@ export default function Home() {
       type === 'ticketMedio' ? ticketMedioPosition :
       canalPosition;
     
-    const mouseStartX = e.clientX;
-    const mouseStartY = e.clientY;
+    const startX = clientX;
+    const startY = clientY;
     
     // Calcula o offset (distância entre o ponto de clique e a origem do card)
-    const offsetX = mouseStartX - currentPosition.x;
-    const offsetY = mouseStartY - currentPosition.y;
+    const offsetX = startX - currentPosition.x;
+    const offsetY = startY - currentPosition.y;
     
     // Capturar dimensões originais do card
     const cardRef = 
@@ -238,10 +231,10 @@ export default function Home() {
     const cardLeft = cardRect.left;
     const cardWidth = cardRect.width;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      // Nova posição = posição do mouse - offset inicial
-      const newX = e.clientX - offsetX;
-      const newY = e.clientY - offsetY;
+    const handleMove = (moveX: number, moveY: number) => {
+      // Nova posição = posição do toque/mouse - offset inicial
+      const newX = moveX - offsetX;
+      const newY = moveY - offsetY;
 
       const windowHeight = window.innerHeight;
       const windowWidth = window.innerWidth;
@@ -301,14 +294,65 @@ export default function Home() {
       }
     };
 
+    const handleMouseMove = (e: MouseEvent) => {
+      handleMove(e.clientX, e.clientY);
+    };
+
     const handleMouseUp = () => {
       setIsDragging(null);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
 
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        handleMove(touch.clientX, touch.clientY);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      setIsDragging(null);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+  };
+
+  const handleMouseDown = (type: 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal', e: React.MouseEvent) => {
+    // Verificar se o clique foi no botão de deletar
+    const target = e.target as HTMLElement;
+    if (target.classList.contains('delete-button')) {
+      e.stopPropagation();
+      removeCard(type);
+      return;
+    }
+    
+    if (e.button !== 0) return; // Apenas botão esquerdo do mouse
+    e.preventDefault();
+    
+    startDrag(type, e.clientX, e.clientY);
+  };
+
+  const handleTouchStart = (type: 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal', e: React.TouchEvent) => {
+    // Verificar se o toque foi no botão de deletar
+    const target = e.target as HTMLElement;
+    if (target.classList.contains('delete-button')) {
+      e.stopPropagation();
+      removeCard(type);
+      return;
+    }
+    
+    if (e.touches.length > 0) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      startDrag(type, touch.clientX, touch.clientY);
+    }
   };
 
   return (
@@ -322,11 +366,11 @@ export default function Home() {
 				backgroundAttachment: 'fixed'
 			}}
 		>
-			<main className="flex flex-col px-20 py-4">
-				{/* Linha superior: Restaurante (esquerda) e Período (direita) - SEM CARDS */}
-				<div className="flex justify-between items-center w-full mb-2">
+			<main className="flex flex-col px-4 md:px-20 py-4">
+				{/* Linha superior: Unidade (esquerda) e Período (direita) - SEM CARDS */}
+				<div className="flex flex-col md:flex-row md:justify-between md:items-center w-full mb-2 gap-3 md:gap-0">
 					<div className="flex items-center gap-3">
-						<span className="text-sm text-zinc-700">restaurante</span>
+						<span className="text-sm text-zinc-700">Unidade</span>
 						<RestaurantSearch onSelect={handleSelect} period={period} />
 					</div>
 					<div className="flex items-center gap-3">
@@ -339,7 +383,7 @@ export default function Home() {
 								cards
 							</button>
 							{showCardsDropdown && (
-								<div className="absolute right-0 mt-2 bg-white border border-[--color-primary]/30 rounded-md shadow-lg z-50 p-2 w-48">
+								<div className="absolute right-0 mt-2 bg-white border border-[--color-primary]/30 rounded-md shadow-lg z-50 p-2 w-48 md:w-48">
 								{!visibleCards.sales && (
 									<button
 										onClick={() => addCard('sales')}
@@ -399,22 +443,23 @@ export default function Home() {
 				</div>
 
 				{/* Linha divisória */}
-				<div className="w-screen h-px bg-black -mx-20 my-0"></div>
+				<div className="w-screen h-px bg-black -mx-4 md:-mx-20 my-0"></div>
 
-				{/* Cards arrastáveis em grid 2x3 */}
+				{/* Cards arrastáveis em grid responsivo */}
 				{(sales !== null || revenue !== null || produtoMaisVendido || vendasTurno || ticketMedio || vendasCanal.length > 0) && (
-					<div className="grid grid-cols-3 gap-6 w-full mt-0 items-start content-start">
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-full mt-0 items-start content-start">
 						{/* Card 1: Vendas */}
 						{visibleCards.sales && (
 							<Card 
 								ref={salesRef}
 								data-card-type="sales"
-								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative self-start"
+								className="border-[--color-primary]/30 p-4 md:p-6 cursor-move select-none transition-none relative self-start touch-none"
 								style={{ 
 									transform: `translate(${salesPosition.x}px, ${salesPosition.y}px)`,
 									zIndex: isDragging === 'sales' ? 1000 : 1
 								}}
 								onMouseDown={(e) => handleMouseDown('sales', e)}
+								onTouchStart={(e) => handleTouchStart('sales', e)}
 							>
 								<button
 									onClick={() => removeCard('sales')}
@@ -425,7 +470,7 @@ export default function Home() {
 								<div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
 									Vendas {period === 'mensal' ? 'do mês' : 'no ano'}
 								</div>
-								<div className="text-3xl font-semibold text-[--color-primary]">{sales?.toLocaleString() || '—'}</div>
+								<div className="text-xl md:text-3xl font-semibold text-[--color-primary]">{sales?.toLocaleString() || '—'}</div>
 							</Card>
 						)}
 						
@@ -434,12 +479,13 @@ export default function Home() {
 							<Card 
 								ref={revenueRef}
 								data-card-type="revenue"
-								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative self-start"
+								className="border-[--color-primary]/30 p-4 md:p-6 cursor-move select-none transition-none relative self-start touch-none"
 								style={{ 
 									transform: `translate(${revenuePosition.x}px, ${revenuePosition.y}px)`,
 									zIndex: isDragging === 'revenue' ? 1000 : 1
 								}}
 								onMouseDown={(e) => handleMouseDown('revenue', e)}
+								onTouchStart={(e) => handleTouchStart('revenue', e)}
 							>
 								<button
 									onClick={() => removeCard('revenue')}
@@ -450,23 +496,136 @@ export default function Home() {
 								<div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
 									Faturamento {period === 'mensal' ? 'do mês' : 'anual'}
 								</div>
-								<div className="text-3xl font-semibold text-[--color-primary]">
+								<div className="text-xl md:text-3xl font-semibold text-[--color-primary]">
 									{revenue ? `R$ ${revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'}
 								</div>
 							</Card>
 						)}
 						
-						{/* Card 3: Produto Mais Vendido */}
+						{/* Card 3: Vendas por Canal - Coluna Direita */}
+						{visibleCards.canal && (
+							<Card 
+								ref={canalRef}
+								data-card-type="canal"
+								className="border-[--color-primary]/30 p-4 md:p-6 cursor-move select-none transition-none relative self-start touch-none lg:row-span-3"
+								style={{ 
+									transform: `translate(${canalPosition.x}px, ${canalPosition.y}px)`,
+									zIndex: isDragging === 'canal' ? 1000 : 1
+								}}
+								onMouseDown={(e) => handleMouseDown('canal', e)}
+								onTouchStart={(e) => handleTouchStart('canal', e)}
+							>
+								<button
+									onClick={() => removeCard('canal')}
+									className="delete-button absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+								>
+									✕
+								</button>
+								{vendasCanal.length > 0 ? (
+									<VendasPorCanalChart canais={vendasCanal} />
+								) : (
+									<div className="text-sm text-zinc-400 text-center">
+										Sem dados disponíveis
+									</div>
+								)}
+							</Card>
+						)}
+						
+						{/* Card 4: Vendas por Turno */}
+						{visibleCards.turno && (
+							<Card 
+								ref={turnoRef}
+								data-card-type="turno"
+								className="border-[--color-primary]/30 p-4 md:p-6 cursor-move select-none transition-none relative self-start touch-none"
+								style={{ 
+									transform: `translate(${turnoPosition.x}px, ${turnoPosition.y}px)`,
+									zIndex: isDragging === 'turno' ? 1000 : 1
+								}}
+								onMouseDown={(e) => handleMouseDown('turno', e)}
+								onTouchStart={(e) => handleTouchStart('turno', e)}
+							>
+								<button
+									onClick={() => removeCard('turno')}
+									className="delete-button absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+								>
+									✕
+								</button>
+								{vendasTurno ? (
+									<SalesByShiftChart 
+										manha={vendasTurno.manha}
+										tarde={vendasTurno.tarde}
+										noite={vendasTurno.noite}
+									/>
+								) : (
+									<div className="text-sm text-zinc-400 text-center">
+										Carregando vendas por turno...
+									</div>
+								)}
+							</Card>
+						)}
+						
+						{/* Card 5: Ticket Médio */}
+						{visibleCards.ticketMedio && (
+							<Card 
+								ref={ticketMedioRef}
+								data-card-type="ticketMedio"
+								className="border-[--color-primary]/30 p-4 md:p-6 cursor-move select-none transition-none relative self-start touch-none"
+								style={{ 
+									transform: `translate(${ticketMedioPosition.x}px, ${ticketMedioPosition.y}px)`,
+									zIndex: isDragging === 'ticketMedio' ? 1000 : 1
+								}}
+								onMouseDown={(e) => handleMouseDown('ticketMedio', e)}
+								onTouchStart={(e) => handleTouchStart('ticketMedio', e)}
+							>
+								<button
+									onClick={() => removeCard('ticketMedio')}
+									className="delete-button absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+								>
+									✕
+								</button>
+								<div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
+									Ticket Médio {period === 'mensal' ? 'do mês' : 'anual'}
+								</div>
+								{loadingTicketMedio ? (
+									<div className="text-sm text-zinc-400 text-center py-4">
+										Carregando dados...
+									</div>
+								) : ticketMedio ? (
+									<div>
+										<div className="text-xl md:text-3xl font-semibold text-[--color-primary] mb-2">
+											R$ {ticketMedio.ticketMedio.toFixed(2).replace('.', ',')}
+										</div>
+										<div className="flex items-center gap-2 text-sm">
+											{ticketMedio.variacao !== 0 && (
+												<>
+													<span className={ticketMedio.variacao >= 0 ? 'text-green-600' : 'text-red-600'}>
+														{ticketMedio.variacao >= 0 ? '▲' : '▼'}
+													</span>
+													<span className={ticketMedio.variacao >= 0 ? 'text-green-600' : 'text-red-600'}>
+														{Math.abs(ticketMedio.variacao).toFixed(1)}% vs período anterior
+													</span>
+												</>
+											)}
+										</div>
+									</div>
+								) : (
+									<div className="text-xl md:text-3xl font-semibold text-[--color-primary]">—</div>
+								)}
+							</Card>
+						)}
+						
+						{/* Card 6: Produto Mais Vendido */}
 						{visibleCards.produto && (
 							<Card 
 								ref={produtoRef}
 								data-card-type="produto"
-								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative self-start"
+								className="border-[--color-primary]/30 p-4 md:p-6 cursor-move select-none transition-none relative self-start touch-none"
 								style={{ 
 									transform: `translate(${produtoPosition.x}px, ${produtoPosition.y}px)`,
 									zIndex: isDragging === 'produto' ? 1000 : (showRanking ? 100 : 1)
 								}}
 								onMouseDown={(e) => handleMouseDown('produto', e)}
+								onTouchStart={(e) => handleTouchStart('produto', e)}
 							>
 								<button
 									onClick={() => removeCard('produto')}
@@ -477,7 +636,7 @@ export default function Home() {
 								<div className="text-sm font-medium text-[--color-muted-foreground] mb-2">Produto Mais Vendido</div>
 								<div className="flex items-start justify-between gap-2">
 									<div className="flex-1">
-										<div className="text-lg font-semibold text-[--color-primary] mb-1">
+										<div className="text-base md:text-lg font-semibold text-[--color-primary] mb-1">
 											{produtoMaisVendido?.nome || '—'}
 										</div>
 										<div className="text-sm text-[--color-muted-foreground]">
@@ -524,121 +683,12 @@ export default function Home() {
 							</Card>
 						)}
 						
-						{/* Card 4: Vendas por Turno */}
-						{visibleCards.turno && (
-							<Card 
-								ref={turnoRef}
-								data-card-type="turno"
-								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative self-start"
-								style={{ 
-									transform: `translate(${turnoPosition.x}px, ${turnoPosition.y}px)`,
-									zIndex: isDragging === 'turno' ? 1000 : 1
-								}}
-								onMouseDown={(e) => handleMouseDown('turno', e)}
-							>
-								<button
-									onClick={() => removeCard('turno')}
-									className="delete-button absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-								>
-									✕
-								</button>
-								{vendasTurno ? (
-									<SalesByShiftChart 
-										manha={vendasTurno.manha}
-										tarde={vendasTurno.tarde}
-										noite={vendasTurno.noite}
-									/>
-								) : (
-									<div className="text-sm text-zinc-400 text-center">
-										Carregando vendas por turno...
-									</div>
-								)}
-							</Card>
-						)}
-						
-						{/* Card 5: Ticket Médio */}
-						{visibleCards.ticketMedio && (
-							<Card 
-								ref={ticketMedioRef}
-								data-card-type="ticketMedio"
-								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative self-start"
-								style={{ 
-									transform: `translate(${ticketMedioPosition.x}px, ${ticketMedioPosition.y}px)`,
-									zIndex: isDragging === 'ticketMedio' ? 1000 : 1
-								}}
-								onMouseDown={(e) => handleMouseDown('ticketMedio', e)}
-							>
-								<button
-									onClick={() => removeCard('ticketMedio')}
-									className="delete-button absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-								>
-									✕
-								</button>
-								<div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
-									Ticket Médio {period === 'mensal' ? 'do mês' : 'anual'}
-								</div>
-								{loadingTicketMedio ? (
-									<div className="text-sm text-zinc-400 text-center py-4">
-										Carregando dados...
-									</div>
-								) : ticketMedio ? (
-									<div>
-										<div className="text-3xl font-semibold text-[--color-primary] mb-2">
-											R$ {ticketMedio.ticketMedio.toFixed(2).replace('.', ',')}
-										</div>
-										<div className="flex items-center gap-2 text-sm">
-											{ticketMedio.variacao !== 0 && (
-												<>
-													<span className={ticketMedio.variacao >= 0 ? 'text-green-600' : 'text-red-600'}>
-														{ticketMedio.variacao >= 0 ? '▲' : '▼'}
-													</span>
-													<span className={ticketMedio.variacao >= 0 ? 'text-green-600' : 'text-red-600'}>
-														{Math.abs(ticketMedio.variacao).toFixed(1)}% vs período anterior
-													</span>
-												</>
-											)}
-										</div>
-									</div>
-								) : (
-									<div className="text-3xl font-semibold text-[--color-primary]">—</div>
-								)}
-							</Card>
-						)}
-						
-						{/* Card 6: Vendas por Canal */}
-						{visibleCards.canal && (
-							<Card 
-								ref={canalRef}
-								data-card-type="canal"
-								className="border-[--color-primary]/30 p-6 cursor-move select-none transition-none relative self-start"
-								style={{ 
-									transform: `translate(${canalPosition.x}px, ${canalPosition.y}px)`,
-									zIndex: isDragging === 'canal' ? 1000 : 1
-								}}
-								onMouseDown={(e) => handleMouseDown('canal', e)}
-							>
-								<button
-									onClick={() => removeCard('canal')}
-									className="delete-button absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-								>
-									✕
-								</button>
-								{vendasCanal.length > 0 ? (
-									<VendasPorCanalChart canais={vendasCanal} />
-								) : (
-									<div className="text-sm text-zinc-400 text-center">
-										Sem dados disponíveis
-									</div>
-								)}
-							</Card>
-						)}
-						
-						{/* Espaços vazios para completar grid 2x3 */}
+						{/* Espaços vazios para completar grid */}
 					</div>
 				)}
 			</main>
 			
-			<footer className="pointer-events-none absolute bottom-4 right-6 text-right leading-5">
+			<footer className="pointer-events-none absolute bottom-2 md:bottom-4 right-3 md:right-6 text-right leading-5">
 				<div className="text-[10px] sm:text-xs font-semibold tracking-wide text-zinc-300">desafio técnico</div>
 				<div className="text-[10px] sm:text-xs text-zinc-500">feito por Vitor Lacerda</div>
 			</footer>

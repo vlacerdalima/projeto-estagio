@@ -75,7 +75,7 @@ export default function RestaurantSearch({ onSelect, period }: RestaurantSearchP
         {loading && ' (carregando...)'}
       </button>
         {showDropdown && (
-          <Card className="absolute z-50 mt-2 w-64 overflow-y-auto border border-[--color-primary]/30 bg-white shadow-lg">
+          <Card className="absolute z-50 mt-2 w-64 md:w-64 sm:w-72 left-0 md:left-auto overflow-y-auto border border-[--color-primary]/30 bg-white shadow-lg max-w-[calc(100vw-2rem)]">
             <input
               type="text"
               placeholder="Buscar restaurante..."
