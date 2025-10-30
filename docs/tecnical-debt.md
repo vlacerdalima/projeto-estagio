@@ -1,6 +1,6 @@
 # Dívida Técnica - Posicionamento dos Cards
 
-## Data: 2024
+## Data: 29/10
 
 ## Problema Identificado
 
@@ -119,6 +119,3 @@ Quando a correção for priorizada, recomenda-se:
 
 ---
 
-**Última Atualização**: 2024  
-**Responsável pela Decisão**: Equipe de Desenvolvimento  
-**Próxima Revisão**: Quando condições listadas em "Quando Revisitar" forem atendidas
