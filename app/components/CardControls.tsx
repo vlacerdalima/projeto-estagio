@@ -9,10 +9,15 @@ interface CardControlsProps {
   visibleCards: VisibleCards;
   isSmartphone: boolean;
   period: Period;
+  isComparisonMode: boolean;
   onTemplateChange: (template: TemplateType) => void;
   onAddCard: (cardType: CardType) => void;
   onRemoveAllCards: () => void;
   onPeriodChange: (period: Period) => void;
+  onComparisonModeToggle: () => void;
+  // Props para modo de comparação
+  comparisonCards?: string[];
+  onAddComparisonCard?: (cardType: string) => void;
 }
 
 export default function CardControls({
@@ -20,10 +25,14 @@ export default function CardControls({
   visibleCards,
   isSmartphone,
   period,
+  isComparisonMode,
   onTemplateChange,
   onAddCard,
   onRemoveAllCards,
-  onPeriodChange
+  onPeriodChange,
+  onComparisonModeToggle,
+  comparisonCards,
+  onAddComparisonCard
 }: CardControlsProps) {
   const [showCardsDropdown, setShowCardsDropdown] = useState(false);
 
@@ -67,7 +76,22 @@ export default function CardControls({
     canal: 'Vendas por Canal'
   };
 
-  const allCardsVisible = Object.values(visibleCards).every(v => v);
+  // Quando em modo comparação, usar os cards de comparação
+  const comparisonCardLabels: Record<string, string> = {
+    'sales': 'Vendas',
+    'revenue': 'Faturamento',
+    'produto': 'Produto Mais Vendido',
+    'ticketMedio': 'Ticket Médio',
+    'turno': 'Vendas por Turno'
+  };
+
+  const allCardsVisible = isComparisonMode 
+    ? comparisonCards?.length === 5 || false
+    : Object.values(visibleCards).every(v => v);
+
+  const availableComparisonCards = isComparisonMode && comparisonCards
+    ? ['sales', 'revenue', 'produto', 'ticketMedio', 'turno'].filter(card => !comparisonCards.includes(card))
+    : [];
 
   return (
     <div className="flex items-center justify-between gap-2 sm:gap-3 w-full flex-wrap">
@@ -122,27 +146,63 @@ export default function CardControls({
           </button>
           {showCardsDropdown && (
             <div className="absolute left-0 mt-2 bg-white border border-[--color-primary]/30 rounded-md shadow-lg z-50 p-2 w-[180px] sm:w-48 max-w-[calc(100vw-3rem)] max-h-[70vh] overflow-y-auto">
-              {(Object.keys(cardLabels) as CardType[]).map((cardType) => {
-                if (visibleCards[cardType]) return null;
-                return (
-                  <button
-                    key={cardType}
-                    onClick={() => {
-                      onAddCard(cardType);
-                      setShowCardsDropdown(false);
-                    }}
-                    className="w-full text-left px-3 py-2.5 hover:bg-gray-100 active:bg-gray-200 rounded text-sm text-zinc-900 touch-manipulation"
-                  >
-                    {cardLabels[cardType]}
-                  </button>
-                );
-              })}
-              {allCardsVisible && (
-                <div className="px-3 py-2 text-sm text-zinc-400 text-center">Todos os cards estão visíveis</div>
+              {isComparisonMode && onAddComparisonCard ? (
+                // Modo comparação
+                <>
+                  {availableComparisonCards.map((cardType) => (
+                    <button
+                      key={cardType}
+                      onClick={() => {
+                        onAddComparisonCard(cardType);
+                        setShowCardsDropdown(false);
+                      }}
+                      className="w-full text-left px-3 py-2.5 hover:bg-gray-100 active:bg-gray-200 rounded text-sm text-zinc-900 touch-manipulation"
+                    >
+                      {comparisonCardLabels[cardType]}
+                    </button>
+                  ))}
+                  {allCardsVisible && (
+                    <div className="px-3 py-2 text-sm text-zinc-400 text-center">Todos os cards estão visíveis</div>
+                  )}
+                </>
+              ) : (
+                // Modo normal
+                <>
+                  {(Object.keys(cardLabels) as CardType[]).map((cardType) => {
+                    if (visibleCards[cardType]) return null;
+                    return (
+                      <button
+                        key={cardType}
+                        onClick={() => {
+                          onAddCard(cardType);
+                          setShowCardsDropdown(false);
+                        }}
+                        className="w-full text-left px-3 py-2.5 hover:bg-gray-100 active:bg-gray-200 rounded text-sm text-zinc-900 touch-manipulation"
+                      >
+                        {cardLabels[cardType]}
+                      </button>
+                    );
+                  })}
+                  {allCardsVisible && (
+                    <div className="px-3 py-2 text-sm text-zinc-400 text-center">Todos os cards estão visíveis</div>
+                  )}
+                </>
               )}
             </div>
           )}
         </div>
+        {!isSmartphone && (
+          <button
+            onClick={onComparisonModeToggle}
+            className={`px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors shadow-sm touch-manipulation ${
+              isComparisonMode
+                ? 'bg-red-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            comparar
+          </button>
+        )}
       </div>
       <div className="flex-shrink-0">
         <PeriodSelector selected={period} onSelect={onPeriodChange} />

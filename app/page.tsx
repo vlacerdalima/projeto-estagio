@@ -4,16 +4,20 @@ import { useState, useRef } from 'react';
 import RestaurantSearch from "@/components/RestaurantSearch";
 import CardControls from "./components/CardControls";
 import CardsGrid from "./components/CardsGrid";
+import ComparisonView from "./components/ComparisonView";
 import { useSmartphoneDetection } from '@/app/hooks/useSmartphoneDetection';
 import { useCardVisibility } from '@/app/hooks/useCardVisibility';
 import { useRestaurantData } from '@/app/hooks/useRestaurantData';
 import { useCardDrag } from '@/app/hooks/useCardDrag';
 import { shouldPreventDrag } from '@/app/utils/cardHelpers';
 import type { Period, CardType, Position, VendasTurno, ProdutoMaisVendido } from '@/app/types';
+import type { ComparisonCardType } from './components/ComparisonView';
 
 export default function Home() {
   const [period, setPeriod] = useState<Period>('anual');
   const [selectedRestaurant, setSelectedRestaurant] = useState<number | null>(null);
+  const [isComparisonMode, setIsComparisonMode] = useState(false);
+  const [comparisonCards, setComparisonCards] = useState<ComparisonCardType[]>(['sales', 'revenue']);
   
   // Detecção de smartphone
   const isSmartphone = useSmartphoneDetection();
@@ -76,6 +80,18 @@ export default function Home() {
   // Estado do ranking
   const [showRanking, setShowRanking] = useState(false);
   
+  // Funções para gerenciar cards de comparação
+  const addComparisonCard = (cardType: string) => {
+    const maxCards = 4;
+    if (comparisonCards.length < maxCards && !comparisonCards.includes(cardType as ComparisonCardType)) {
+      setComparisonCards(prev => [...prev, cardType as ComparisonCardType]);
+    }
+  };
+
+  const removeComparisonCard = (cardType: ComparisonCardType) => {
+    setComparisonCards(prev => prev.filter(c => c !== cardType));
+  };
+
   const handleSelect = (
     salesVal: number | null,
     revenueVal: number | null,
@@ -164,16 +180,28 @@ export default function Home() {
             visibleCards={visibleCards}
             isSmartphone={isSmartphone}
             period={period}
+            isComparisonMode={isComparisonMode}
             onTemplateChange={applyTemplate}
             onAddCard={addCard}
             onRemoveAllCards={removeAllCards}
             onPeriodChange={setPeriod}
+            onComparisonModeToggle={() => setIsComparisonMode(!isComparisonMode)}
+            comparisonCards={comparisonCards}
+            onAddComparisonCard={addComparisonCard}
           />
         </div>
 
         <div className="w-screen h-px bg-black -mx-4 md:-mx-20 my-0"></div>
 
-        <CardsGrid
+        {isComparisonMode && !isSmartphone ? (
+          <ComparisonView 
+            period={period}
+            visibleComparisonCards={comparisonCards}
+            onAddComparisonCard={addComparisonCard}
+            onRemoveComparisonCard={removeComparisonCard}
+          />
+        ) : (
+          <CardsGrid
           visibleCards={visibleCards}
           positions={positions}
           isDragging={isDragging}
@@ -195,6 +223,7 @@ export default function Home() {
           onFetchRanking={fetchRanking}
           refs={refs}
         />
+        )}
       </main>
 
       <footer className="pointer-events-none absolute bottom-2 md:bottom-4 right-3 md:right-6 text-right leading-5">
