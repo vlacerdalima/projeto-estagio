@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { buildDateFilter } from '@/lib/dateFilter';
 
 export async function GET(
   request: Request,
@@ -9,8 +10,10 @@ export async function GET(
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || 'anual';
+    const year = searchParams.get('year');
+    const month = searchParams.get('month');
     
-    const filterClause = period === 'mensal' ? "AND s.created_at >= NOW() - INTERVAL '30 days'" : '';
+    const { filter: filterClause, params: dateParams } = buildDateFilter(year, month, period, 's.');
     
     // Query usando a coluna channel_id da tabela sales
     // Primeiro tenta buscar com JOIN na tabela channels
@@ -27,7 +30,7 @@ export async function GET(
                      GROUP BY c.name
                      ORDER BY receita DESC`;
       
-      result = await pool.query(sql1, [id]);
+      result = await pool.query(sql1, [id, ...dateParams]);
       console.log('✅ Query com JOIN em channels funcionou');
     } catch (err: any) {
       console.log('⚠️ Query com JOIN falhou, tentando sem JOIN:', err.message);
@@ -43,7 +46,7 @@ export async function GET(
                     GROUP BY s.channel_id
                     ORDER BY receita DESC`;
       
-      result = await pool.query(sql2, [id]);
+      result = await pool.query(sql2, [id, ...dateParams]);
       console.log('✅ Query sem JOIN funcionou');
     }
     

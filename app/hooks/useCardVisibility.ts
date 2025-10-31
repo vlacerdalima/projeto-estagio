@@ -71,6 +71,16 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
           canal: false
         });
         break;
+      case 'produtos':
+        setVisibleCards({
+          sales: false,
+          revenue: false,
+          produto: false,
+          turno: false,
+          ticketMedio: false,
+          canal: false
+        });
+        break;
     }
   };
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { buildDateFilter } from '@/lib/dateFilter';
 
 export async function GET(
   request: Request,
@@ -9,19 +10,17 @@ export async function GET(
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || 'anual';
+    const year = searchParams.get('year');
+    const month = searchParams.get('month');
     
-    // Determinar o filtro de data baseado no período
-    let dateFilter = '';
-    if (period === 'mensal') {
-      dateFilter = "AND s.created_at >= NOW() - INTERVAL '30 days'";
-    }
+    const { filter: dateFilter, params: dateParams } = buildDateFilter(year, month, period, 's.');
     
     const result = await pool.query(
       `SELECT COALESCE(SUM(p.value), 0) as revenue 
        FROM sales s 
        JOIN payments p ON s.id = p.sale_id 
        WHERE s.store_id = $1 ${dateFilter}`,
-      [id]
+      [id, ...dateParams]
     );
     return NextResponse.json({ revenue: parseFloat(result.rows[0].revenue) });
   } catch (error) {

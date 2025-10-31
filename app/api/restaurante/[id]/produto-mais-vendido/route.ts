@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { buildDateFilter } from '@/lib/dateFilter';
 
 export async function GET(
   request: Request,
@@ -9,8 +10,10 @@ export async function GET(
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || 'anual';
+    const year = searchParams.get('year');
+    const month = searchParams.get('month');
     
-    const filterClause = period === 'mensal' ? "AND s.created_at >= NOW() - INTERVAL '30 days'" : '';
+    const { filter: filterClause, params: dateParams } = buildDateFilter(year, month, period, 's.');
     
     // Primeiro, vamos tentar descobrir qual tabela tem os produtos
     // Vou tentar várias possibilidades baseado na estrutura conhecida
@@ -55,7 +58,7 @@ export async function GET(
     
     for (const query of queries) {
       try {
-        const result = await pool.query(query.sql, [id]);
+        const result = await pool.query(query.sql, [id, ...dateParams]);
         
         if (result.rows.length > 0 && result.rows[0].nome_produto) {
           return NextResponse.json({

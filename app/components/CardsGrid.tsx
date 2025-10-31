@@ -79,7 +79,7 @@ export default function CardsGrid({
           onRemove={() => onRemoveCard('sales')}
         >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
-            Vendas {period === 'mensal' ? 'do mês' : 'no ano'}
+            Vendas
           </div>
           <div className="text-xl md:text-3xl font-semibold text-[--color-primary]">
             {sales?.toLocaleString() || '—'}
@@ -98,7 +98,7 @@ export default function CardsGrid({
           onRemove={() => onRemoveCard('revenue')}
         >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
-            Faturamento {period === 'mensal' ? 'do mês' : 'anual'}
+            Faturamento
           </div>
           <div className="text-xl md:text-3xl font-semibold text-[--color-primary]">
             {revenue ? `R$ ${revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'}
@@ -158,7 +158,7 @@ export default function CardsGrid({
           onRemove={() => onRemoveCard('ticketMedio')}
         >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
-            Ticket Médio {period === 'mensal' ? 'do mês' : 'anual'}
+            Ticket Médio
           </div>
           {loadingTicketMedio ? (
             <div className="text-sm text-zinc-400 text-center py-4">Carregando dados...</div>

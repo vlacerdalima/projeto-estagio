@@ -30,7 +30,7 @@ export interface CanalData {
 
 export type CardType = 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal';
 
-export type TemplateType = 'geral' | 'vendas' | 'faturamento';
+export type TemplateType = 'geral' | 'vendas' | 'faturamento' | 'produtos';
 
 export interface VisibleCards {
   sales: boolean;

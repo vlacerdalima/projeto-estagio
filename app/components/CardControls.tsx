@@ -14,6 +14,9 @@ interface CardControlsProps {
   onAddCard: (cardType: CardType) => void;
   onRemoveAllCards: () => void;
   onPeriodChange: (period: Period) => void;
+  onYearChange?: (year: string | number) => void;
+  onMonthChange?: (month: string | number) => void;
+  restaurantId?: number | null;
   onComparisonModeToggle: () => void;
   // Props para modo de comparação
   comparisonCards?: string[];
@@ -30,6 +33,9 @@ export default function CardControls({
   onAddCard,
   onRemoveAllCards,
   onPeriodChange,
+  onYearChange,
+  onMonthChange,
+  restaurantId,
   onComparisonModeToggle,
   comparisonCards,
   onAddComparisonCard
@@ -128,6 +134,16 @@ export default function CardControls({
             >
               faturamento
             </button>
+            <button
+              onClick={() => onTemplateChange('produtos')}
+              className={`px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors shadow-sm touch-manipulation ${
+                currentTemplate === 'produtos'
+                  ? 'bg-gray-700 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              produtos
+            </button>
           </>
         )}
         <button
@@ -205,7 +221,13 @@ export default function CardControls({
         )}
       </div>
       <div className="flex-shrink-0">
-        <PeriodSelector selected={period} onSelect={onPeriodChange} />
+        <PeriodSelector 
+          selected={period} 
+          onSelect={onPeriodChange}
+          onYearChange={onYearChange}
+          onMonthChange={onMonthChange}
+          restaurantId={restaurantId}
+        />
       </div>
     </div>
   );

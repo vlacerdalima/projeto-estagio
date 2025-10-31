@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { buildDateFilter } from '@/lib/dateFilter';
 
 export async function GET(
   request: Request,
@@ -9,8 +10,10 @@ export async function GET(
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || 'anual';
+    const year = searchParams.get('year');
+    const month = searchParams.get('month');
     
-    const filterClause = period === 'mensal' ? "AND s.created_at >= NOW() - INTERVAL '30 days'" : '';
+    const { filter: filterClause, params: dateParams } = buildDateFilter(year, month, period, 's.');
     
     // Buscar faturamento e número de vendas do período atual
     const result = await pool.query(
@@ -20,7 +23,7 @@ export async function GET(
        FROM sales s 
        LEFT JOIN payments p ON s.id = p.sale_id 
        WHERE s.store_id = $1 ${filterClause}`,
-      [id]
+      [id, ...dateParams]
     );
     
     const revenue = parseFloat(result.rows[0].revenue);
@@ -28,9 +31,28 @@ export async function GET(
     const ticketMedio = totalSales > 0 ? revenue / totalSales : 0;
     
     // Buscar faturamento e número de vendas do período anterior
-    const previousFilterClause = period === 'mensal' 
-      ? "AND s.created_at >= NOW() - INTERVAL '60 days' AND s.created_at < NOW() - INTERVAL '30 days'"
-      : "AND s.created_at >= NOW() - INTERVAL '2 years' AND s.created_at < NOW() - INTERVAL '1 year'";
+    // Se ano/mês específicos foram selecionados, calcular período anterior baseado nisso
+    let previousFilterClause = '';
+    let previousParams: any[] = [];
+    
+    if (year && year !== 'todos' && month && month !== 'todos') {
+      // Mês específico: período anterior é o mês anterior
+      const prevMonth = parseInt(month as string) - 1;
+      const prevYear = prevMonth <= 0 ? parseInt(year as string) - 1 : parseInt(year as string);
+      const actualPrevMonth = prevMonth <= 0 ? 12 : prevMonth;
+      previousFilterClause = `AND EXTRACT(YEAR FROM s.created_at) = $${dateParams.length + 2} AND EXTRACT(MONTH FROM s.created_at) = $${dateParams.length + 3}`;
+      previousParams = [prevYear, actualPrevMonth];
+    } else if (year && year !== 'todos') {
+      // Ano específico: período anterior é o ano anterior
+      const prevYear = parseInt(year as string) - 1;
+      previousFilterClause = `AND EXTRACT(YEAR FROM s.created_at) = $${dateParams.length + 2}`;
+      previousParams = [prevYear];
+    } else {
+      // Fallback para cálculo padrão baseado em período
+      previousFilterClause = period === 'mensal' 
+        ? "AND s.created_at >= NOW() - INTERVAL '60 days' AND s.created_at < NOW() - INTERVAL '30 days'"
+        : "AND s.created_at >= NOW() - INTERVAL '2 years' AND s.created_at < NOW() - INTERVAL '1 year'";
+    }
     
     const previousResult = await pool.query(
       `SELECT 
@@ -39,7 +61,7 @@ export async function GET(
        FROM sales s 
        LEFT JOIN payments p ON s.id = p.sale_id 
        WHERE s.store_id = $1 ${previousFilterClause}`,
-      [id]
+      [id, ...previousParams]
     );
     
     const previousRevenue = parseFloat(previousResult.rows[0].revenue);

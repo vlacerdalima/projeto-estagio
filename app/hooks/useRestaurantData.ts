@@ -10,7 +10,7 @@ interface RestaurantData {
   vendasCanal: CanalData[];
 }
 
-export function useRestaurantData(selectedRestaurant: number | null, period: Period) {
+export function useRestaurantData(selectedRestaurant: number | null, period: Period, year?: string | number, month?: string | number) {
   const [data, setData] = useState<RestaurantData>({
     sales: null,
     revenue: null,
@@ -29,13 +29,17 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
       const fetchData = async () => {
         setLoadingTicketMedio(true);
         try {
+          const yearParam = year && year !== 'todos' ? `&year=${year}` : '';
+          const monthParam = month && month !== 'todos' ? `&month=${month}` : '';
+          const params = `period=${period}${yearParam}${monthParam}`;
+          
           const [salesRes, revenueRes, produtoRes, turnoRes, ticketMedioRes, canalRes] = await Promise.all([
-            fetch(`/api/restaurante/${selectedRestaurant}/vendas?period=${period}`),
-            fetch(`/api/restaurante/${selectedRestaurant}/faturamento?period=${period}`),
-            fetch(`/api/restaurante/${selectedRestaurant}/produto-mais-vendido?period=${period}`),
-            fetch(`/api/restaurante/${selectedRestaurant}/vendas-por-turno?period=${period}`),
-            fetch(`/api/restaurante/${selectedRestaurant}/ticket-medio?period=${period}`),
-            fetch(`/api/restaurante/${selectedRestaurant}/vendas-por-canal?period=${period}`)
+            fetch(`/api/restaurante/${selectedRestaurant}/vendas?${params}`),
+            fetch(`/api/restaurante/${selectedRestaurant}/faturamento?${params}`),
+            fetch(`/api/restaurante/${selectedRestaurant}/produto-mais-vendido?${params}`),
+            fetch(`/api/restaurante/${selectedRestaurant}/vendas-por-turno?${params}`),
+            fetch(`/api/restaurante/${selectedRestaurant}/ticket-medio?${params}`),
+            fetch(`/api/restaurante/${selectedRestaurant}/vendas-por-canal?${params}`)
           ]);
           
           const salesData = await salesRes.json();
@@ -62,13 +66,16 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
       
       fetchData();
     }
-  }, [period, selectedRestaurant]);
+  }, [period, selectedRestaurant, year, month]);
 
   const fetchRanking = async () => {
     if (selectedRestaurant) {
       setLoadingRanking(true);
       try {
-        const response = await fetch(`/api/restaurante/${selectedRestaurant}/produtos-ranking?period=${period}`);
+        const yearParam = year && year !== 'todos' ? `&year=${year}` : '';
+        const monthParam = month && month !== 'todos' ? `&month=${month}` : '';
+        const params = `period=${period}${yearParam}${monthParam}`;
+        const response = await fetch(`/api/restaurante/${selectedRestaurant}/produtos-ranking?${params}`);
         const data = await response.json();
         setProdutosRanking(data);
       } catch (e) {

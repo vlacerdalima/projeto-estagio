@@ -16,6 +16,7 @@ export default function RestaurantSearch({ onSelect, period }: RestaurantSearchP
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -45,9 +46,24 @@ export default function RestaurantSearch({ onSelect, period }: RestaurantSearchP
     r.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Auto-focus no input quando dropdown abrir
+  useEffect(() => {
+    if (showDropdown && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [showDropdown]);
+
+  // Limpar busca quando fechar dropdown
+  useEffect(() => {
+    if (!showDropdown) {
+      setSearch('');
+    }
+  }, [showDropdown]);
+
   async function handleSelect(restaurantId: number) {
     setSelected(restaurantId);
     setShowDropdown(false);
+    setSearch('');
     setLoading(true);
 
     try {
@@ -80,26 +96,43 @@ export default function RestaurantSearch({ onSelect, period }: RestaurantSearchP
     }
   }
 
+  const selectedRestaurant = selected ? restaurants.find(r => r.id === selected) : null;
+  const displayText = selectedRestaurant?.name || 'Unidade';
+
   return (
-    <div className="relative w-full" ref={dropdownRef}>
+    <div className="relative inline-block" ref={dropdownRef}>
       <button
         onClick={() => setShowDropdown(!showDropdown)}
         disabled={loading}
-        className="text-sm font-medium text-[#fa8072] hover:underline active:opacity-70 disabled:opacity-50 w-full text-left truncate touch-manipulation"
+        className="bg-[#fa8072] hover:bg-[#fa8072]/90 active:bg-[#fa8072]/80 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-md w-auto flex items-center justify-between gap-2 touch-manipulation transition-colors"
       >
-        {selected
-          ? restaurants.find(r => r.id === selected)?.name || 'Selecionar Restaurante'
-          : 'Selecionar Restaurante'}
-        {loading && ' (carregando...)'}
+        <span className="truncate">
+          {loading ? 'Carregando...' : displayText}
+        </span>
+        <svg
+          className={`w-4 h-4 flex-shrink-0 transition-transform ${showDropdown ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
       </button>
         {showDropdown && (
           <Card className="absolute z-50 mt-2 w-full sm:w-72 left-0 overflow-y-auto border border-[--color-primary]/30 bg-white shadow-lg max-w-[calc(100vw-2rem)]">
             <input
+              ref={inputRef}
               type="text"
-              placeholder="Buscar restaurante..."
+              placeholder="Digite para buscar..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full border-b border-[--color-primary]/20 px-4 py-2 outline-none focus:ring-2 focus:ring-[--color-primary]/20"
+              onKeyDown={(e) => {
+                // Prevenir que Enter feche o dropdown
+                if (e.key === 'Enter' && filtered.length === 1) {
+                  handleSelect(filtered[0].id);
+                }
+              }}
+              className="w-full border-b border-[--color-primary]/20 px-4 py-2 outline-none focus:ring-2 focus:ring-[--color-primary]/20 placeholder:text-black text-black"
             />
             <div className="max-h-48 overflow-y-auto">
               {filtered.map((r) => (

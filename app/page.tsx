@@ -15,6 +15,8 @@ import type { ComparisonCardType } from './components/ComparisonView';
 
 export default function Home() {
   const [period, setPeriod] = useState<Period>('anual');
+  const [selectedYear, setSelectedYear] = useState<string | number>('todos');
+  const [selectedMonth, setSelectedMonth] = useState<string | number>('todos');
   const [selectedRestaurant, setSelectedRestaurant] = useState<number | null>(null);
   const [isComparisonMode, setIsComparisonMode] = useState(false);
   const [comparisonCards, setComparisonCards] = useState<ComparisonCardType[]>(['sales', 'revenue']);
@@ -75,7 +77,7 @@ export default function Home() {
     produtosRanking,
     loadingRanking,
     fetchRanking
-  } = useRestaurantData(selectedRestaurant, period);
+  } = useRestaurantData(selectedRestaurant, period, selectedYear, selectedMonth);
   
   // Estado do ranking
   const [showRanking, setShowRanking] = useState(false);
@@ -170,7 +172,6 @@ export default function Home() {
       <main className="flex flex-col px-4 md:px-20 py-4">
         <div className="flex flex-col gap-3 w-full mb-2">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full">
-            <span className="text-sm text-zinc-700 whitespace-nowrap">Unidade</span>
             <div className="flex-1 min-w-0">
               <RestaurantSearch onSelect={handleSelect} period={period} />
             </div>
@@ -185,6 +186,9 @@ export default function Home() {
             onAddCard={addCard}
             onRemoveAllCards={removeAllCards}
             onPeriodChange={setPeriod}
+            onYearChange={setSelectedYear}
+            onMonthChange={setSelectedMonth}
+            restaurantId={selectedRestaurant}
             onComparisonModeToggle={() => setIsComparisonMode(!isComparisonMode)}
             comparisonCards={comparisonCards}
             onAddComparisonCard={addComparisonCard}

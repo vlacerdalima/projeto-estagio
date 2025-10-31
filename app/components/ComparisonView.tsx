@@ -109,7 +109,7 @@ export default function ComparisonView({
           <Card className="border-[--color-primary]/30 p-3 relative h-full">
             <div className="flex items-start justify-between mb-1">
               <div className="text-xs font-medium text-[--color-muted-foreground]">
-                Vendas {period === 'mensal' ? 'do mês' : 'no ano'}
+                Vendas
               </div>
               {selectedRestaurant2 && data1.data.sales !== null && data2.data.sales !== null && (() => {
                 const comparison = compareValues(data1.data.sales, data2.data.sales);
@@ -130,7 +130,7 @@ export default function ComparisonView({
           <Card className="border-[--color-primary]/30 p-3 relative h-full">
             <div className="flex items-start justify-between mb-1">
               <div className="text-xs font-medium text-[--color-muted-foreground]">
-                Faturamento {period === 'mensal' ? 'do mês' : 'anual'}
+                Faturamento
               </div>
               {selectedRestaurant2 && data1.data.revenue !== null && data2.data.revenue !== null && (() => {
                 const comparison = compareValues(data1.data.revenue, data2.data.revenue);
@@ -165,7 +165,7 @@ export default function ComparisonView({
           <Card className="border-[--color-primary]/30 p-3 relative h-full">
             <div className="flex items-start justify-between mb-1">
               <div className="text-xs font-medium text-[--color-muted-foreground]">
-                Ticket Médio {period === 'mensal' ? 'do mês' : 'anual'}
+                Ticket Médio
               </div>
               {selectedRestaurant2 && data1.data.ticketMedio !== null && data2.data.ticketMedio !== null && (() => {
                 const comparison = compareValues(
@@ -267,7 +267,7 @@ export default function ComparisonView({
           <Card className="border-[--color-primary]/30 p-3 relative h-full">
             <div className="flex items-start justify-between mb-1">
               <div className="text-xs font-medium text-[--color-muted-foreground]">
-                Vendas {period === 'mensal' ? 'do mês' : 'no ano'}
+                Vendas
               </div>
               {selectedRestaurant1 && data1.data.sales !== null && data2.data.sales !== null && (() => {
                 const comparison = compareValues(data2.data.sales, data1.data.sales);
@@ -288,7 +288,7 @@ export default function ComparisonView({
           <Card className="border-[--color-primary]/30 p-3 relative h-full">
             <div className="flex items-start justify-between mb-1">
               <div className="text-xs font-medium text-[--color-muted-foreground]">
-                Faturamento {period === 'mensal' ? 'do mês' : 'anual'}
+                Faturamento
               </div>
               {selectedRestaurant1 && data1.data.revenue !== null && data2.data.revenue !== null && (() => {
                 const comparison = compareValues(data2.data.revenue, data1.data.revenue);
@@ -323,7 +323,7 @@ export default function ComparisonView({
           <Card className="border-[--color-primary]/30 p-3 relative h-full">
             <div className="flex items-start justify-between mb-1">
               <div className="text-xs font-medium text-[--color-muted-foreground]">
-                Ticket Médio {period === 'mensal' ? 'do mês' : 'anual'}
+                Ticket Médio
               </div>
               {selectedRestaurant1 && data1.data.ticketMedio !== null && data2.data.ticketMedio !== null && (() => {
                 const comparison = compareValues(

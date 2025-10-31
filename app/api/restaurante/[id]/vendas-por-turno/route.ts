@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { buildDateFilter } from '@/lib/dateFilter';
 
 export async function GET(
   request: Request,
@@ -9,13 +10,10 @@ export async function GET(
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || 'anual';
+    const year = searchParams.get('year');
+    const month = searchParams.get('month');
     
-    // Usar a estrutura real que descobrimos
-    const tableName = 'sales';
-    const timeColumn = 'created_at'; // Coluna real confirmada!
-    const storeIdColumn = 'store_id'; // Coluna real confirmada!
-    
-    const filterClause = period === 'mensal' ? "AND created_at >= NOW() - INTERVAL '30 days'" : '';
+    const { filter: filterClause, params: dateParams } = buildDateFilter(year, month, period, '');
     
     try {
       // Usando CTE para evitar problema com alias no GROUP BY
@@ -39,7 +37,7 @@ export async function GET(
           WHEN 'noite' THEN 3
         END`;
       
-      const result = await pool.query(sql, [id]);
+      const result = await pool.query(sql, [id, ...dateParams]);
       
       const totalGeral = result.rows.reduce((sum, row) => sum + parseInt(row.total), 0);
       
