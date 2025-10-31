@@ -26,6 +26,18 @@ CREATE INDEX IF NOT EXISTS idx_payments_sale_value
 ON payments(sale_id, value);
 
 -- ============================================
+-- ÍNDICES PARA RESTAURANTES (STORES)
+-- ============================================
+
+-- Índice para ORDER BY name na busca inicial de restaurantes (CRÍTICO - primeira query do app)
+CREATE INDEX IF NOT EXISTS idx_stores_name 
+ON stores(name);
+
+-- Índice otimizado para SELECT com ORDER BY (cobre id e name)
+CREATE INDEX IF NOT EXISTS idx_stores_name_id 
+ON stores(name, id);
+
+-- ============================================
 -- ÍNDICES PARA PRODUTOS (PRODUCTS/PRODUCT_SALES)
 -- ============================================
 
@@ -49,13 +61,20 @@ ON product_sales(product_id, quantity);
 -- ÍNDICES COMPOSTOS ADICIONAIS (OTIMIZAÇÕES ESPECÍFICAS)
 -- ============================================
 
--- Índice para queries de vendas por turno (usa EXTRACT(HOUR FROM created_at))
-CREATE INDEX IF NOT EXISTS idx_sales_store_hour 
-ON sales(store_id, EXTRACT(HOUR FROM created_at));
+-- NOTA: Índices com EXTRACT(HOUR) e NOW() foram removidos pois usam funções não-imutáveis
+-- O índice idx_sales_store_created já otimiza essas queries suficientemente
 
--- Índice para buscas de vendas em um período específico
-CREATE INDEX IF NOT EXISTS idx_sales_date_range 
-ON sales(store_id, created_at) WHERE created_at >= NOW() - INTERVAL '60 days';
+-- Índice para JOIN com channels por channel_id (usado em vendas por canal)
+CREATE INDEX IF NOT EXISTS idx_sales_channel_id 
+ON sales(channel_id);
+
+-- ============================================
+-- ÍNDICES PARA CANAIS (CHANNELS)
+-- ============================================
+
+-- Índice para JOIN com sales por ID (geralmente já existe como PK, mas garantimos aqui)
+CREATE INDEX IF NOT EXISTS idx_channels_id 
+ON channels(id);
 
 -- ============================================
 -- NOTAS DE OTIMIZAÇÃO
@@ -69,12 +88,14 @@ BENEFÍCIOS ESPERADOS:
 - Aceleração de filtros por período (mensal/anual)
 
 QUERIES OTIMIZADAS:
-1. Vendas totais (sales)
-2. Faturamento (revenue)
-3. Produto mais vendido (product_sales + products)
-4. Vendas por turno (EXTRACT HOUR)
-5. Ticket médio (payments + sales)
-6. Ranking de produtos (product_sales)
+1. Lista de restaurantes (stores ORDER BY name) - OTIMIZADO com idx_stores_name
+2. Vendas totais (sales) - OTIMIZADO com idx_sales_store_created
+3. Faturamento (revenue) - OTIMIZADO com idx_sales_store_created e idx_payments_sale_value
+4. Produto mais vendido (product_sales + products) - OTIMIZADO com idx_product_sales_sale_id
+5. Vendas por turno - OTIMIZADO com idx_sales_store_created (EXTRACT HOUR é otimizado pelo índice composto)
+6. Ticket médio (payments + sales) - OTIMIZADO com idx_sales_store_created e idx_payments_sale_value
+7. Ranking de produtos (product_sales) - OTIMIZADO com idx_product_sales_sale_id
+8. Vendas por canal (sales + channels) - OTIMIZADO com idx_sales_channel_id e idx_channels_id
 
 MONITORAMENTO:
 - Verificar uso dos índices: EXPLAIN ANALYZE nas queries
@@ -92,7 +113,7 @@ MONITORAMENTO:
 --   indexname,
 --   indexdef
 -- FROM pg_indexes
--- WHERE tablename IN ('sales', 'payments', 'products', 'product_sales')
+-- WHERE tablename IN ('sales', 'payments', 'products', 'product_sales', 'stores', 'channels')
 -- ORDER BY tablename, indexname;
 
 -- ============================================
@@ -107,6 +128,8 @@ MONITORAMENTO:
 -- DROP INDEX IF EXISTS idx_products_name;
 -- DROP INDEX IF EXISTS idx_product_sales_sale_id;
 -- DROP INDEX IF EXISTS idx_product_sales_product_quantity;
--- DROP INDEX IF EXISTS idx_sales_store_hour;
--- DROP INDEX IF EXISTS idx_sales_date_range;
+-- DROP INDEX IF EXISTS idx_stores_name;
+-- DROP INDEX IF EXISTS idx_stores_name_id;
+-- DROP INDEX IF EXISTS idx_sales_channel_id;
+-- DROP INDEX IF EXISTS idx_channels_id;
 
