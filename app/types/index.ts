@@ -28,7 +28,7 @@ export interface CanalData {
   percentual: number;
 }
 
-export type CardType = 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal';
+export type CardType = 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal' | 'produtoRemovido' | 'tendencia';
 
 export type TemplateType = 'geral' | 'vendas' | 'faturamento' | 'produtos';
 
@@ -39,10 +39,26 @@ export interface VisibleCards {
   turno: boolean;
   ticketMedio: boolean;
   canal: boolean;
+  produtoRemovido: boolean;
+  tendencia: boolean;
 }
 
 export interface ProdutoMaisVendido {
   nome: string | null;
   total: number;
+}
+
+export interface ProdutoMaisRemovido {
+  nome: string | null;
+  total: number;
+}
+
+export interface TendenciaVendas {
+  taxaCrescimento: number; // porcentagem de crescimento mensal (ex: 5.2)
+  dadosMensais: Array<{
+    mes: number;
+    ano: number;
+    vendas: number;
+  }>;
 }
 

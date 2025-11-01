@@ -17,7 +17,7 @@ export function useCardDrag({ positions, refs, onPositionChange }: UseCardDragPr
   ) => {
     setIsDragging(type);
     
-    const currentPosition = positions[type];
+    const currentPosition = positions[type] || { x: 0, y: 0 };
     const cardRef = refs[type].current;
     
     if (!cardRef) return;
@@ -45,8 +45,9 @@ export function useCardDrag({ positions, refs, onPositionChange }: UseCardDragPr
         const deltaX = moveX - startX;
         const deltaY = moveY - startY;
         
-        let newX = currentPosition.x + deltaX;
-        let newY = currentPosition.y + deltaY;
+        const position = positions[type] || { x: 0, y: 0 };
+        let newX = position.x + deltaX;
+        let newY = position.y + deltaY;
 
         const windowHeight = window.innerHeight;
         const windowWidth = window.innerWidth;
@@ -57,8 +58,8 @@ export function useCardDrag({ positions, refs, onPositionChange }: UseCardDragPr
         const gridRect = gridContainer.getBoundingClientRect();
         const lineY = gridRect.top;
         
-        const baseTop = cardRect.top - currentPosition.y;
-        const baseLeft = cardRect.left - currentPosition.x;
+        const baseTop = cardRect.top - position.y;
+        const baseLeft = cardRect.left - position.x;
         const baseBottom = baseTop + cardHeight;
         const baseRight = baseLeft + cardWidth;
         

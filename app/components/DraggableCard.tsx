@@ -31,7 +31,7 @@ const DraggableCard = forwardRef<HTMLDivElement, DraggableCardProps>(({
       data-card-type={type}
       className={`border-[--color-primary]/30 p-4 md:p-6 cursor-move select-none transition-none relative self-start touch-none ${className}`}
       style={{
-        transform: `translate(${position.x}px, ${position.y}px)`,
+        transform: `translate(${position?.x || 0}px, ${position?.y || 0}px)`,
         zIndex: isDragging ? 1000 : 1
       }}
       onMouseDown={onMouseDown}

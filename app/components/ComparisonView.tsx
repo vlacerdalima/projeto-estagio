@@ -225,12 +225,23 @@ export default function ComparisonView({
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">{data1.data.vendasTurno.manha}</span>
                   {selectedRestaurant2 && data2.data.vendasTurno && (() => {
-                    const comparison = compareValues(data1.data.vendasTurno.manha, data2.data.vendasTurno.manha);
-                    return comparison ? (
-                      <span className={`text-sm ${comparison === 'win' ? 'text-green-600' : 'text-red-600'}`}>
-                        {comparison === 'win' ? '▲' : '▼'}
-                      </span>
-                    ) : null;
+                    const val1 = data1.data.vendasTurno.manha;
+                    const val2 = data2.data.vendasTurno.manha;
+                    const comparison = compareValues(val1, val2);
+                    if (comparison) {
+                      return (
+                        <span className={`text-sm inline-block w-4 text-center ${comparison === 'win' ? 'text-green-600' : 'text-red-600'}`}>
+                          {comparison === 'win' ? '▲' : '▼'}
+                        </span>
+                      );
+                    } else if (val1 !== null && val2 !== null && val1 === val2) {
+                      return (
+                        <span className="text-sm text-white inline-block w-4 text-center">
+                          =
+                        </span>
+                      );
+                    }
+                    return null;
                   })()}
                 </div>
               </div>
@@ -239,12 +250,23 @@ export default function ComparisonView({
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">{data1.data.vendasTurno.tarde}</span>
                   {selectedRestaurant2 && data2.data.vendasTurno && (() => {
-                    const comparison = compareValues(data1.data.vendasTurno.tarde, data2.data.vendasTurno.tarde);
-                    return comparison ? (
-                      <span className={`text-sm ${comparison === 'win' ? 'text-green-600' : 'text-red-600'}`}>
-                        {comparison === 'win' ? '▲' : '▼'}
-                      </span>
-                    ) : null;
+                    const val1 = data1.data.vendasTurno.tarde;
+                    const val2 = data2.data.vendasTurno.tarde;
+                    const comparison = compareValues(val1, val2);
+                    if (comparison) {
+                      return (
+                        <span className={`text-sm inline-block w-4 text-center ${comparison === 'win' ? 'text-green-600' : 'text-red-600'}`}>
+                          {comparison === 'win' ? '▲' : '▼'}
+                        </span>
+                      );
+                    } else if (val1 !== null && val2 !== null && val1 === val2) {
+                      return (
+                        <span className="text-sm text-white inline-block w-4 text-center">
+                          =
+                        </span>
+                      );
+                    }
+                    return null;
                   })()}
                 </div>
               </div>
@@ -253,12 +275,23 @@ export default function ComparisonView({
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">{data1.data.vendasTurno.noite}</span>
                   {selectedRestaurant2 && data2.data.vendasTurno && (() => {
-                    const comparison = compareValues(data1.data.vendasTurno.noite, data2.data.vendasTurno.noite);
-                    return comparison ? (
-                      <span className={`text-sm ${comparison === 'win' ? 'text-green-600' : 'text-red-600'}`}>
-                        {comparison === 'win' ? '▲' : '▼'}
-                      </span>
-                    ) : null;
+                    const val1 = data1.data.vendasTurno.noite;
+                    const val2 = data2.data.vendasTurno.noite;
+                    const comparison = compareValues(val1, val2);
+                    if (comparison) {
+                      return (
+                        <span className={`text-sm inline-block w-4 text-center ${comparison === 'win' ? 'text-green-600' : 'text-red-600'}`}>
+                          {comparison === 'win' ? '▲' : '▼'}
+                        </span>
+                      );
+                    } else if (val1 !== null && val2 !== null && val1 === val2) {
+                      return (
+                        <span className="text-sm text-white inline-block w-4 text-center">
+                          =
+                        </span>
+                      );
+                    }
+                    return null;
                   })()}
                 </div>
               </div>
@@ -383,12 +416,23 @@ export default function ComparisonView({
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">{data2.data.vendasTurno.manha}</span>
                   {selectedRestaurant1 && data1.data.vendasTurno && (() => {
-                    const comparison = compareValues(data2.data.vendasTurno.manha, data1.data.vendasTurno.manha);
-                    return comparison ? (
-                      <span className={`text-sm ${comparison === 'win' ? 'text-green-600' : 'text-red-600'}`}>
-                        {comparison === 'win' ? '▲' : '▼'}
-                      </span>
-                    ) : null;
+                    const val1 = data2.data.vendasTurno.manha;
+                    const val2 = data1.data.vendasTurno.manha;
+                    const comparison = compareValues(val1, val2);
+                    if (comparison) {
+                      return (
+                        <span className={`text-sm inline-block w-4 text-center ${comparison === 'win' ? 'text-green-600' : 'text-red-600'}`}>
+                          {comparison === 'win' ? '▲' : '▼'}
+                        </span>
+                      );
+                    } else if (val1 !== null && val2 !== null && val1 === val2) {
+                      return (
+                        <span className="text-sm text-white inline-block w-4 text-center">
+                          =
+                        </span>
+                      );
+                    }
+                    return null;
                   })()}
                 </div>
               </div>
@@ -397,12 +441,23 @@ export default function ComparisonView({
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">{data2.data.vendasTurno.tarde}</span>
                   {selectedRestaurant1 && data1.data.vendasTurno && (() => {
-                    const comparison = compareValues(data2.data.vendasTurno.tarde, data1.data.vendasTurno.tarde);
-                    return comparison ? (
-                      <span className={`text-sm ${comparison === 'win' ? 'text-green-600' : 'text-red-600'}`}>
-                        {comparison === 'win' ? '▲' : '▼'}
-                      </span>
-                    ) : null;
+                    const val1 = data2.data.vendasTurno.tarde;
+                    const val2 = data1.data.vendasTurno.tarde;
+                    const comparison = compareValues(val1, val2);
+                    if (comparison) {
+                      return (
+                        <span className={`text-sm inline-block w-4 text-center ${comparison === 'win' ? 'text-green-600' : 'text-red-600'}`}>
+                          {comparison === 'win' ? '▲' : '▼'}
+                        </span>
+                      );
+                    } else if (val1 !== null && val2 !== null && val1 === val2) {
+                      return (
+                        <span className="text-sm text-white inline-block w-4 text-center">
+                          =
+                        </span>
+                      );
+                    }
+                    return null;
                   })()}
                 </div>
               </div>
@@ -411,12 +466,23 @@ export default function ComparisonView({
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">{data2.data.vendasTurno.noite}</span>
                   {selectedRestaurant1 && data1.data.vendasTurno && (() => {
-                    const comparison = compareValues(data2.data.vendasTurno.noite, data1.data.vendasTurno.noite);
-                    return comparison ? (
-                      <span className={`text-sm ${comparison === 'win' ? 'text-green-600' : 'text-red-600'}`}>
-                        {comparison === 'win' ? '▲' : '▼'}
-                      </span>
-                    ) : null;
+                    const val1 = data2.data.vendasTurno.noite;
+                    const val2 = data1.data.vendasTurno.noite;
+                    const comparison = compareValues(val1, val2);
+                    if (comparison) {
+                      return (
+                        <span className={`text-sm inline-block w-4 text-center ${comparison === 'win' ? 'text-green-600' : 'text-red-600'}`}>
+                          {comparison === 'win' ? '▲' : '▼'}
+                        </span>
+                      );
+                    } else if (val1 !== null && val2 !== null && val1 === val2) {
+                      return (
+                        <span className="text-sm text-white inline-block w-4 text-center">
+                          =
+                        </span>
+                      );
+                    }
+                    return null;
                   })()}
                 </div>
               </div>
@@ -509,7 +575,7 @@ export default function ComparisonView({
 
       {/* Filtros de Período - Só aparece quando ambos restaurantes estão selecionados */}
       {selectedRestaurant1 && selectedRestaurant2 && onPeriodChange && (
-        <div className="mb-4 flex justify-center">
+        <div className="mb-4 flex justify-center items-center gap-2">
           <PeriodSelector 
             selected={period} 
             onSelect={onPeriodChange}
@@ -517,6 +583,30 @@ export default function ComparisonView({
             onMonthChange={onMonthChange}
             restaurantIds={[selectedRestaurant1, selectedRestaurant2]}
           />
+          {(data1.loading || data2.loading) && (
+            <div className="flex items-center">
+              <svg
+                className="animate-spin h-5 w-5 text-gray-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            </div>
+          )}
         </div>
       )}
 

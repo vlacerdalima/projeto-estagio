@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import DraggableCard from './DraggableCard';
 import SalesByShiftChart from "@/components/SalesByShiftChart";
 import VendasPorCanalChart from "@/components/VendasPorCanalChart";
+import TendenciaVendasChart from "@/components/TendenciaVendasChart";
 import type { 
   VisibleCards, 
   CardType, 
@@ -13,7 +14,9 @@ import type {
   CanalData,
   TicketMedio,
   ProdutoMaisVendido,
-  ProdutoRanking
+  ProdutoMaisRemovido,
+  ProdutoRanking,
+  TendenciaVendas
 } from '@/app/types';
 
 interface CardsGridProps {
@@ -24,9 +27,11 @@ interface CardsGridProps {
   sales: number | null;
   revenue: number | null;
   produtoMaisVendido: ProdutoMaisVendido | null;
+  produtoMaisRemovido: ProdutoMaisRemovido | null;
   vendasTurno: VendasTurno | null;
   ticketMedio: TicketMedio | null;
   vendasCanal: CanalData[];
+  tendenciaVendas: TendenciaVendas | null;
   loadingTicketMedio: boolean;
   showRanking: boolean;
   produtosRanking: ProdutoRanking[];
@@ -47,9 +52,11 @@ export default function CardsGrid({
   sales,
   revenue,
   produtoMaisVendido,
+  produtoMaisRemovido,
   vendasTurno,
   ticketMedio,
   vendasCanal,
+  tendenciaVendas,
   loadingTicketMedio,
   showRanking,
   produtosRanking,
@@ -102,6 +109,49 @@ export default function CardsGrid({
           </div>
           <div className="text-xl md:text-3xl font-semibold text-[--color-primary]">
             {revenue ? `R$ ${revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'}
+          </div>
+        </DraggableCard>
+      )}
+
+      {visibleCards.tendencia && (
+        <DraggableCard
+          ref={refs.tendencia}
+          type="tendencia"
+          position={positions.tendencia || { x: 0, y: 0 }}
+          isDragging={isDragging === 'tendencia'}
+          onMouseDown={(e) => onMouseDown('tendencia', e)}
+          onTouchStart={(e) => onTouchStart('tendencia', e)}
+          onRemove={() => onRemoveCard('tendencia')}
+        >
+          <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
+            Tendência de Crescimento
+          </div>
+          <div className="flex items-end justify-between gap-2">
+            <div className="flex-1">
+              {tendenciaVendas ? (
+                <>
+                  <div className={`text-2xl md:text-3xl font-semibold mb-1 ${
+                    tendenciaVendas.taxaCrescimento >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {tendenciaVendas.taxaCrescimento >= 0 ? '+' : ''}{tendenciaVendas.taxaCrescimento.toFixed(1)}%
+                  </div>
+                  <div className="text-xs text-[--color-muted-foreground]">
+                    / mês
+                  </div>
+                </>
+              ) : (
+                <div className="text-lg text-zinc-400">—</div>
+              )}
+            </div>
+            <div className="flex-shrink-0">
+              {tendenciaVendas && tendenciaVendas.dadosMensais.length > 0 ? (
+                <TendenciaVendasChart dadosMensais={tendenciaVendas.dadosMensais} />
+              ) : (
+                <div className="w-[120px] h-12 flex items-center justify-center text-xs text-zinc-400">
+                  —
+                </div>
+              )}
+            </div>
           </div>
         </DraggableCard>
       )}
@@ -186,6 +236,38 @@ export default function CardsGrid({
           )}
           </DraggableCard>
         </div>
+      )}
+
+      {visibleCards.produtoRemovido && (
+        <DraggableCard
+          ref={refs.produtoRemovido}
+          type="produtoRemovido"
+          position={positions.produtoRemovido || { x: 0, y: 0 }}
+          isDragging={isDragging === 'produtoRemovido'}
+          onMouseDown={(e) => onMouseDown('produtoRemovido', e)}
+          onTouchStart={(e) => onTouchStart('produtoRemovido', e)}
+          onRemove={() => onRemoveCard('produtoRemovido')}
+        >
+          <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
+            Produto Mais Removido
+          </div>
+          <div className="flex-1">
+            {produtoMaisRemovido?.nome ? (
+              <>
+                <div className="text-base md:text-lg font-semibold text-[--color-primary] mb-1">
+                  {produtoMaisRemovido.nome}
+                </div>
+                <div className="text-sm text-[--color-muted-foreground]">
+                  {produtoMaisRemovido.total} remoções
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-zinc-400 text-center py-2">
+                Sem dados disponíveis
+              </div>
+            )}
+          </div>
+        </DraggableCard>
       )}
 
       {visibleCards.turno && (

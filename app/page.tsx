@@ -41,7 +41,9 @@ export default function Home() {
     produto: { x: 0, y: 0 },
     turno: { x: 0, y: 0 },
     ticketMedio: { x: 0, y: 0 },
-    canal: { x: 0, y: 0 }
+    canal: { x: 0, y: 0 },
+    produtoRemovido: { x: 0, y: 0 },
+    tendencia: { x: 0, y: 0 }
   });
   
   // Refs dos cards - preciso criar aqui para passar ao hook
@@ -51,6 +53,8 @@ export default function Home() {
   const turnoRef = useRef<HTMLDivElement>(null);
   const ticketMedioRef = useRef<HTMLDivElement>(null);
   const canalRef = useRef<HTMLDivElement>(null);
+  const produtoRemovidoRef = useRef<HTMLDivElement>(null);
+  const tendenciaRef = useRef<HTMLDivElement>(null);
   
   const refs: Record<CardType, React.RefObject<HTMLDivElement | null>> = {
     sales: salesRef,
@@ -58,7 +62,9 @@ export default function Home() {
     produto: produtoRef,
     turno: turnoRef,
     ticketMedio: ticketMedioRef,
-    canal: canalRef
+    canal: canalRef,
+    produtoRemovido: produtoRemovidoRef,
+    tendencia: tendenciaRef
   };
   
   // Drag dos cards
@@ -218,9 +224,11 @@ export default function Home() {
           sales={data.sales}
           revenue={data.revenue}
           produtoMaisVendido={data.produtoMaisVendido}
+          produtoMaisRemovido={data.produtoMaisRemovido}
           vendasTurno={data.vendasTurno}
           ticketMedio={data.ticketMedio}
           vendasCanal={data.vendasCanal}
+          tendenciaVendas={data.tendenciaVendas}
           loadingTicketMedio={loadingTicketMedio}
           showRanking={showRanking}
           produtosRanking={produtosRanking}

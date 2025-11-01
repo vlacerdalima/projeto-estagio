@@ -8,7 +8,9 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
     produto: false,
     turno: false,
     ticketMedio: false,
-    canal: false
+    canal: false,
+    produtoRemovido: false,
+    tendencia: false
   });
   
   const [currentTemplate, setCurrentTemplate] = useState<TemplateType>('geral');
@@ -24,7 +26,9 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
         produto: true,
         turno: true,
         ticketMedio: true,
-        canal: true
+        canal: true,
+        produtoRemovido: false,
+        tendencia: false
       });
       cardsInitializedRef.current = true;
     }
@@ -48,7 +52,9 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
           produto: true,
           turno: true,
           ticketMedio: true,
-          canal: true
+          canal: true,
+          produtoRemovido: false,
+          tendencia: false
         });
         break;
       case 'vendas':
@@ -58,7 +64,9 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
           produto: true,
           turno: true,
           ticketMedio: false,
-          canal: true
+          canal: true,
+          produtoRemovido: false,
+          tendencia: true
         });
         break;
       case 'faturamento':
@@ -68,7 +76,9 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
           produto: false,
           turno: false,
           ticketMedio: true,
-          canal: false
+          canal: false,
+          produtoRemovido: false,
+          tendencia: false
         });
         break;
       case 'produtos':
@@ -78,7 +88,9 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
           produto: false,
           turno: false,
           ticketMedio: false,
-          canal: false
+          canal: false,
+          produtoRemovido: true,
+          tendencia: false
         });
         break;
     }
@@ -91,7 +103,9 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
       produto: false,
       turno: false,
       ticketMedio: false,
-      canal: false
+      canal: false,
+      produtoRemovido: false,
+      tendencia: false
     });
   };
 

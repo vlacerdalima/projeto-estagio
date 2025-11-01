@@ -139,7 +139,11 @@ export default function PeriodSelector({ selected, onSelect, onYearChange, onMon
       <div className="relative inline-block" ref={yearDropdownRef}>
         <button
           onClick={() => setShowYearDropdown(!showYearDropdown)}
-          className="px-3 py-1.5 text-sm font-medium text-zinc-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors touch-manipulation flex items-center gap-2"
+          className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors touch-manipulation flex items-center gap-2 ${
+            restaurantIds && restaurantIds.length > 0
+              ? 'text-zinc-700 bg-gray-100 hover:bg-gray-200 border-2 border-black'
+              : 'text-zinc-700 bg-gray-100 hover:bg-gray-200'
+          }`}
         >
           <span>{getYearDisplay()}</span>
           <svg
@@ -200,7 +204,11 @@ export default function PeriodSelector({ selected, onSelect, onYearChange, onMon
       <div className="relative inline-block" ref={monthDropdownRef}>
         <button
           onClick={() => setShowMonthDropdown(!showMonthDropdown)}
-          className="px-3 py-1.5 text-sm font-medium text-zinc-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors touch-manipulation flex items-center gap-2"
+          className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors touch-manipulation flex items-center gap-2 ${
+            restaurantIds && restaurantIds.length > 0
+              ? 'text-zinc-700 bg-gray-100 hover:bg-gray-200 border-2 border-black'
+              : 'text-zinc-700 bg-gray-100 hover:bg-gray-200'
+          }`}
         >
           <span>{getMonthDisplay()}</span>
           <svg
