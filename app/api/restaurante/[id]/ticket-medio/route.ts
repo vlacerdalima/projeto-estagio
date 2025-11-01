@@ -16,18 +16,19 @@ export async function GET(
     const { filter: filterClause, params: dateParams } = buildDateFilter(year, month, period, 's.');
     
     // Buscar faturamento e número de vendas do período atual
+    const queryParams = [id, ...dateParams];
     const result = await pool.query(
       `SELECT 
         COALESCE(SUM(p.value), 0) as revenue,
         COUNT(DISTINCT s.id) as total_sales
        FROM sales s 
-       LEFT JOIN payments p ON s.id = p.sale_id 
+       JOIN payments p ON s.id = p.sale_id 
        WHERE s.store_id = $1 ${filterClause}`,
-      [id, ...dateParams]
+      queryParams
     );
     
-    const revenue = parseFloat(result.rows[0].revenue);
-    const totalSales = parseInt(result.rows[0].total_sales);
+    const revenue = parseFloat(result.rows[0]?.revenue || 0);
+    const totalSales = parseInt(result.rows[0]?.total_sales || 0);
     const ticketMedio = totalSales > 0 ? revenue / totalSales : 0;
     
     // Buscar faturamento e número de vendas do período anterior
@@ -40,12 +41,12 @@ export async function GET(
       const prevMonth = parseInt(month as string) - 1;
       const prevYear = prevMonth <= 0 ? parseInt(year as string) - 1 : parseInt(year as string);
       const actualPrevMonth = prevMonth <= 0 ? 12 : prevMonth;
-      previousFilterClause = `AND EXTRACT(YEAR FROM s.created_at) = $${dateParams.length + 2} AND EXTRACT(MONTH FROM s.created_at) = $${dateParams.length + 3}`;
+      previousFilterClause = `AND EXTRACT(YEAR FROM s.created_at) = $2 AND EXTRACT(MONTH FROM s.created_at) = $3`;
       previousParams = [prevYear, actualPrevMonth];
     } else if (year && year !== 'todos') {
       // Ano específico: período anterior é o ano anterior
       const prevYear = parseInt(year as string) - 1;
-      previousFilterClause = `AND EXTRACT(YEAR FROM s.created_at) = $${dateParams.length + 2}`;
+      previousFilterClause = `AND EXTRACT(YEAR FROM s.created_at) = $2`;
       previousParams = [prevYear];
     } else {
       // Fallback para cálculo padrão baseado em período
@@ -59,13 +60,13 @@ export async function GET(
         COALESCE(SUM(p.value), 0) as revenue,
         COUNT(DISTINCT s.id) as total_sales
        FROM sales s 
-       LEFT JOIN payments p ON s.id = p.sale_id 
+       JOIN payments p ON s.id = p.sale_id 
        WHERE s.store_id = $1 ${previousFilterClause}`,
       [id, ...previousParams]
     );
     
-    const previousRevenue = parseFloat(previousResult.rows[0].revenue);
-    const previousTotalSales = parseInt(previousResult.rows[0].total_sales);
+    const previousRevenue = parseFloat(previousResult.rows[0]?.revenue || 0);
+    const previousTotalSales = parseInt(previousResult.rows[0]?.total_sales || 0);
     const previousTicketMedio = previousTotalSales > 0 ? previousRevenue / previousTotalSales : 0;
     
     // Calcular variação percentual

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Card } from "@/components/ui/card";
 import type { Period } from '@/app/types';
 import { useRestaurantData } from '@/app/hooks/useRestaurantData';
+import PeriodSelector from '@/components/PeriodSelector';
 
 interface Restaurant {
   id: number;
@@ -12,6 +13,11 @@ interface Restaurant {
 
 interface ComparisonViewProps {
   period: Period;
+  year?: string | number;
+  month?: string | number;
+  onPeriodChange?: (period: Period) => void;
+  onYearChange?: (year: string | number) => void;
+  onMonthChange?: (month: string | number) => void;
   onAddComparisonCard?: (cardType: ComparisonCardType) => void;
   onRemoveComparisonCard?: (cardType: ComparisonCardType) => void;
   visibleComparisonCards?: ComparisonCardType[];
@@ -21,6 +27,11 @@ export type ComparisonCardType = 'sales' | 'revenue' | 'produto' | 'ticketMedio'
 
 export default function ComparisonView({ 
   period, 
+  year,
+  month,
+  onPeriodChange,
+  onYearChange,
+  onMonthChange,
   onAddComparisonCard,
   onRemoveComparisonCard,
   visibleComparisonCards: externalVisibleCards
@@ -55,8 +66,8 @@ export default function ComparisonView({
     }
   };
 
-  const data1 = useRestaurantData(selectedRestaurant1, period);
-  const data2 = useRestaurantData(selectedRestaurant2, period);
+  const data1 = useRestaurantData(selectedRestaurant1, period, year, month);
+  const data2 = useRestaurantData(selectedRestaurant2, period, year, month);
 
   useEffect(() => {
     fetch('/api/restaurantes')
@@ -495,6 +506,19 @@ export default function ComparisonView({
           </div>
         </div>
       </div>
+
+      {/* Filtros de Período - Só aparece quando ambos restaurantes estão selecionados */}
+      {selectedRestaurant1 && selectedRestaurant2 && onPeriodChange && (
+        <div className="mb-4 flex justify-center">
+          <PeriodSelector 
+            selected={period} 
+            onSelect={onPeriodChange}
+            onYearChange={onYearChange}
+            onMonthChange={onMonthChange}
+            restaurantIds={[selectedRestaurant1, selectedRestaurant2]}
+          />
+        </div>
+      )}
 
       {/* Cards lado a lado com X centralizado */}
       {selectedRestaurant1 && selectedRestaurant2 && (

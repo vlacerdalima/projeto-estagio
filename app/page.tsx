@@ -200,6 +200,11 @@ export default function Home() {
         {isComparisonMode && !isSmartphone ? (
           <ComparisonView 
             period={period}
+            year={selectedYear}
+            month={selectedMonth}
+            onPeriodChange={setPeriod}
+            onYearChange={setSelectedYear}
+            onMonthChange={setSelectedMonth}
             visibleComparisonCards={comparisonCards}
             onAddComparisonCard={addComparisonCard}
             onRemoveComparisonCard={removeComparisonCard}

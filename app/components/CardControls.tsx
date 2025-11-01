@@ -220,15 +220,17 @@ export default function CardControls({
           </button>
         )}
       </div>
-      <div className="flex-shrink-0">
-        <PeriodSelector 
-          selected={period} 
-          onSelect={onPeriodChange}
-          onYearChange={onYearChange}
-          onMonthChange={onMonthChange}
-          restaurantId={restaurantId}
-        />
-      </div>
+      {!isComparisonMode && (
+        <div className="flex-shrink-0">
+          <PeriodSelector 
+            selected={period} 
+            onSelect={onPeriodChange}
+            onYearChange={onYearChange}
+            onMonthChange={onMonthChange}
+            restaurantId={restaurantId}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -36,6 +36,10 @@ export function buildDateFilter(
     // Fallback para período mensal padrão (últimos 30 dias)
     // Não precisa de parâmetro adicional, usa função SQL
     filter = `AND ${tableAlias}created_at >= NOW() - INTERVAL '30 days'`;
+  } else if (period === 'anual') {
+    // Fallback para período anual padrão (últimos 365 dias)
+    // Não precisa de parâmetro adicional, usa função SQL
+    filter = `AND ${tableAlias}created_at >= NOW() - INTERVAL '365 days'`;
   }
   
   return { filter, params };

@@ -119,3 +119,118 @@ Quando a correção for priorizada, recomenda-se:
 
 ---
 
+## Dívida Técnica - Tela de Comparação
+
+
+## Problema Identificado
+
+A tela de comparação de restaurantes apresenta vários pontos que precisam ser otimizados e melhorados na interface.
+
+### Descrição dos Problemas
+
+1. **Otimização de Performance**: A tela de comparação pode ter performance subótima quando múltiplos restaurantes são comparados simultaneamente
+2. **Interface do Usuário**: Há melhorias potenciais na organização visual e na experiência do usuário:
+   - Layout dos dropdowns de seleção de restaurantes
+   - Posicionamento e visibilidade dos filtros de período
+   - Organização dos cards de comparação lado a lado
+   - Espaçamento e alinhamento visual
+3. **Funcionalidades Incompletas**: Algumas features podem não estar totalmente implementadas ou podem ter comportamento inesperado
+
+### Impacto no Usuário
+
+- Experiência do usuário pode ser melhorada
+- Possível lentidão ao carregar comparações entre múltiplos restaurantes
+- Interface pode ser mais intuitiva e visualmente organizada
+
+## Análise Técnica
+
+### Áreas Identificadas para Melhoria
+
+1. **Performance**:
+   - Verificar se há queries duplicadas ou otimizações necessárias nas chamadas de API
+   - Avaliar se o carregamento de dados para comparação pode ser mais eficiente
+   - Considerar implementação de cache ou otimização de re-renders
+
+2. **UI/UX**:
+   - Revisar layout e espaçamento dos elementos
+   - Melhorar visibilidade e posicionamento dos controles de filtro
+   - Otimizar a apresentação dos cards lado a lado para melhor leitura
+   - Considerar feedback visual durante carregamento
+
+3. **Funcionalidade**:
+   - Garantir que todos os filtros de período funcionam corretamente
+   - Validar que comparações são calculadas corretamente
+   - Verificar edge cases (ex: sem dados, diferentes períodos)
+
+## Decisão: Prorrogação da Otimização
+
+### Motivo da Prorrogação
+
+**Escolha consciente de prorrogar a otimização desta tela** pelos seguintes motivos:
+
+1. **Funcionalidade Básica Funciona**: A tela de comparação atende às necessidades primárias do usuário
+2. **Prioridades do Projeto**: Outras funcionalidades são mais críticas no momento
+3. **Escopo de Melhoria**: As melhorias são principalmente incrementais (otimizações e refinamentos de UI)
+4. **Tempo Estimado**: A otimização completa exigiria:
+   - Análise detalhada de performance
+   - Pesquisa de padrões de UI para comparações
+   - Implementação de melhorias incrementais
+   - Testes extensivos
+
+### Justificativa Técnica
+
+- A funcionalidade de comparação está operacional
+- As melhorias são de natureza polida e incremental, não críticas
+- O esforço pode ser melhor investido em funcionalidades mais críticas
+- A tela pode ser melhorada em iterações futuras conforme feedback dos usuários
+
+## Possíveis Consequências da Prorrogação
+
+### Consequências de Curto Prazo (Aceitáveis)
+
+1. **Experiência do Usuário Sub-ótima**: Interface pode não ser tão intuitiva quanto poderia
+2. **Performance Adequada**: Pode haver lentidão menor em cenários específicos
+3. **Feedback de Usuários**: Possível feedback sobre melhorias de interface
+
+### Consequências de Longo Prazo (Potenciais Riscos)
+
+1. **Acúmulo de Dívida**: Melhorias podem se tornar mais complexas com o tempo
+2. **Expectativas dos Usuários**: Conforme o sistema cresce, usuários podem esperar uma experiência mais polida
+3. **Refatoração Futura**: Mudanças futuras podem tornar a otimização mais complexa
+
+### Mitigações Consideradas
+
+1. **Feedback dos Usuários**: Coletar feedback específico sobre pain points na tela de comparação
+2. **Melhorias Incrementais**: Implementar pequenas melhorias conforme oportunidade
+3. **Monitoramento de Performance**: Acompanhar métricas de performance na tela
+
+## Plano Futuro
+
+### Quando Revisitar
+
+Esta dívida técnica deve ser revisada quando:
+
+1. **Feedback dos Usuários**: Se houver feedback significativo sobre problemas na tela de comparação
+2. **Prioridade de Produto**: Se a funcionalidade de comparação se tornar mais central ao produto
+3. **Novas Features**: Se novas funcionalidades forem adicionadas à tela de comparação
+4. **Refatoração Geral**: Se houver uma refatoração geral do sistema de comparação
+
+### Abordagem Recomendada para Otimização Futura
+
+Quando a otimização for priorizada, recomenda-se:
+
+1. **Análise de Performance**: Realizar profiling da tela para identificar gargalos específicos
+2. **Pesquisa de UI**: Estudar padrões de UI para comparações em dashboards
+3. **Implementação Incremental**: Implementar melhorias uma de cada vez para validar impacto
+4. **Testes de Usuário**: Considerar testes com usuários reais para priorizar melhorias
+5. **Métricas**: Definir métricas de sucesso (performance, satisfação do usuário)
+
+## Status Atual
+
+- ✅ **Problemas Identificados e Documentados**
+- ✅ **Decisão de Prorrogação Registrada**
+- ⏸️ **Otimização Prorrogada Indefinidamente**
+- 📝 **Revisão Pendente** (a ser revisado conforme triggers listados acima)
+
+---
+

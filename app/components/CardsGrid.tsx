@@ -125,6 +125,69 @@ export default function CardsGrid({
         </DraggableCard>
       )}
 
+      {visibleCards.produto && (
+        <div className={showRanking ? 'relative z-[9999]' : ''}>
+          <DraggableCard
+            ref={refs.produto}
+            type="produto"
+            position={positions.produto}
+            isDragging={isDragging === 'produto'}
+            onMouseDown={(e) => onMouseDown('produto', e)}
+            onTouchStart={(e) => onTouchStart('produto', e)}
+            onRemove={() => onRemoveCard('produto')}
+          >
+          <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
+            Produto Mais Vendido
+          </div>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <div className="text-base md:text-lg font-semibold text-[--color-primary] mb-1">
+                {produtoMaisVendido?.nome || '—'}
+              </div>
+              <div className="text-sm text-[--color-muted-foreground]">
+                {produtoMaisVendido?.total ? `${produtoMaisVendido.total} unidades` : ''}
+              </div>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!showRanking && produtosRanking.length === 0) {
+                  onFetchRanking();
+                }
+                onToggleRanking();
+              }}
+              className="flex items-center justify-center w-6 h-6 text-zinc-400 hover:text-[#fa8072] transition-colors"
+              title="Ver ranking completo"
+            >
+              {showRanking ? '▼' : '▶'}
+            </button>
+          </div>
+          {showRanking && (
+            <div className="ranking-table-container absolute top-full left-0 right-0 mt-4 bg-white border border-[--color-primary]/30 rounded-b-lg shadow-lg p-4 max-h-[400px] overflow-y-auto z-[10000]">
+              <div className="text-sm font-semibold text-zinc-900 mb-3">Ranking Completo</div>
+              <div className="space-y-1">
+                {loadingRanking ? (
+                  <div className="text-xs text-zinc-500 text-center py-4">Carregando dados...</div>
+                ) : produtosRanking.length > 0 ? (
+                  produtosRanking.map((produto, index) => (
+                    <div key={index} className="flex justify-between items-center text-sm py-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-zinc-500 w-5">{index + 1}.</span>
+                        <span className="font-semibold text-zinc-900">{produto.nome}</span>
+                      </div>
+                      <span className="text-[#fa8072] font-bold text-base">{produto.total}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-xs text-zinc-500 text-center py-2">Sem dados disponíveis</div>
+                )}
+              </div>
+            </div>
+          )}
+          </DraggableCard>
+        </div>
+      )}
+
       {visibleCards.turno && (
         <DraggableCard
           ref={refs.turno}
@@ -182,67 +245,6 @@ export default function CardsGrid({
             </div>
           ) : (
             <div className="text-xl md:text-3xl font-semibold text-[--color-primary]">—</div>
-          )}
-        </DraggableCard>
-      )}
-
-      {visibleCards.produto && (
-        <DraggableCard
-          ref={refs.produto}
-          type="produto"
-          position={positions.produto}
-          isDragging={isDragging === 'produto'}
-          onMouseDown={(e) => onMouseDown('produto', e)}
-          onTouchStart={(e) => onTouchStart('produto', e)}
-          onRemove={() => onRemoveCard('produto')}
-        >
-          <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
-            Produto Mais Vendido
-          </div>
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1">
-              <div className="text-base md:text-lg font-semibold text-[--color-primary] mb-1">
-                {produtoMaisVendido?.nome || '—'}
-              </div>
-              <div className="text-sm text-[--color-muted-foreground]">
-                {produtoMaisVendido?.total ? `${produtoMaisVendido.total} unidades` : ''}
-              </div>
-            </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!showRanking && produtosRanking.length === 0) {
-                  onFetchRanking();
-                }
-                onToggleRanking();
-              }}
-              className="flex items-center justify-center w-6 h-6 text-zinc-400 hover:text-[#fa8072] transition-colors"
-              title="Ver ranking completo"
-            >
-              {showRanking ? '▼' : '▶'}
-            </button>
-          </div>
-          {showRanking && (
-            <div className="ranking-table-container absolute top-full left-0 right-0 mt-4 bg-white border border-[--color-primary]/30 rounded-b-lg shadow-lg p-4 max-h-[400px] overflow-y-auto z-50">
-              <div className="text-sm font-semibold text-zinc-900 mb-3">Ranking Completo</div>
-              <div className="space-y-1">
-                {loadingRanking ? (
-                  <div className="text-xs text-zinc-500 text-center py-4">Carregando dados...</div>
-                ) : produtosRanking.length > 0 ? (
-                  produtosRanking.map((produto, index) => (
-                    <div key={index} className="flex justify-between items-center text-sm py-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-zinc-500 w-5">{index + 1}.</span>
-                        <span className="font-semibold text-zinc-900">{produto.nome}</span>
-                      </div>
-                      <span className="text-[#fa8072] font-bold text-base">{produto.total}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-xs text-zinc-500 text-center py-2">Sem dados disponíveis</div>
-                )}
-              </div>
-            </div>
           )}
         </DraggableCard>
       )}

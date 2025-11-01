@@ -12,9 +12,10 @@ interface PeriodSelectorProps {
   onYearChange?: (year: string | number) => void;
   onMonthChange?: (month: string | number) => void;
   restaurantId?: number | null;
+  restaurantIds?: number[];  // Para comparação - múltiplos restaurantes
 }
 
-export default function PeriodSelector({ selected, onSelect, onYearChange, onMonthChange, restaurantId }: PeriodSelectorProps) {
+export default function PeriodSelector({ selected, onSelect, onYearChange, onMonthChange, restaurantId, restaurantIds }: PeriodSelectorProps) {
   const [showYearDropdown, setShowYearDropdown] = useState(false);
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const [selectedYear, setSelectedYear] = useState<string | number>('todos');
@@ -41,9 +42,28 @@ export default function PeriodSelector({ selected, onSelect, onYearChange, onMon
     12: 'Dezembro'
   };
 
-  // Buscar períodos disponíveis quando restaurante for selecionado
+  // Buscar períodos disponíveis quando restaurante(s) for(em) selecionado(s)
   useEffect(() => {
-    if (restaurantId) {
+    if (restaurantIds && restaurantIds.length > 0) {
+      // Múltiplos restaurantes (modo comparação) - buscar intersecção
+      setLoading(true);
+      const idsParam = restaurantIds.join(',');
+      fetch(`/api/restaurantes/periodos-disponiveis?ids=${idsParam}`)
+        .then(res => res.json())
+        .then(data => {
+          setAvailableYears(data.years || []);
+          setMonthsByYear(data.monthsByYear || {});
+        })
+        .catch(err => {
+          console.error('Erro ao buscar períodos disponíveis:', err);
+          setAvailableYears([]);
+          setMonthsByYear({});
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else if (restaurantId) {
+      // Restaurante único - buscar períodos normalmente
       setLoading(true);
       fetch(`/api/restaurante/${restaurantId}/periodos-disponiveis`)
         .then(res => res.json())
@@ -63,7 +83,7 @@ export default function PeriodSelector({ selected, onSelect, onYearChange, onMon
       setAvailableYears([]);
       setMonthsByYear({});
     }
-  }, [restaurantId]);
+  }, [restaurantId, restaurantIds]);
 
   // Filtrar meses baseado no ano selecionado
   const getAvailableMonths = () => {
