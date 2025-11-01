@@ -16,6 +16,12 @@ export interface ProdutoRanking {
   total: number;
 }
 
+export interface RegiaoEntrega {
+  regiao: string;
+  totalEntregas: number;
+  tempoMedioMinutos: number;
+}
+
 export interface TicketMedio {
   ticketMedio: number;
   variacao: number;
@@ -28,7 +34,7 @@ export interface CanalData {
   percentual: number;
 }
 
-export type CardType = 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal' | 'produtoRemovido' | 'tendencia' | 'desvioMedia' | 'tempoMedioEntrega';
+export type CardType = 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal' | 'produtoRemovido' | 'tendencia' | 'desvioMedia' | 'tempoMedioEntrega' | 'sazonalidade';
 
 export type TemplateType = 'geral' | 'vendas' | 'faturamento' | 'produtos';
 
@@ -43,6 +49,7 @@ export interface VisibleCards {
   tendencia: boolean;
   desvioMedia: boolean;
   tempoMedioEntrega: boolean;
+  sazonalidade: boolean;
 }
 
 export interface ProdutoMaisVendido {
@@ -73,5 +80,16 @@ export interface DesvioMedia {
 export interface TempoMedioEntrega {
   tempoMedio: number; // tempo médio em minutos
   variacao: number; // variação percentual comparado ao período anterior
+}
+
+export interface ProdutoSazonal {
+  nome: string;
+  mesPico: string; // nome do mês ou evento (ex: "Jul", "Black Friday", "Domingo")
+  lift: number; // percentual de lift vs baseline (ex: 82 = 82%)
+  pontosSazonalidade?: number[]; // 12 pontos (Jan-Dez) para sparkline opcional
+}
+
+export interface SazonalidadeProdutos {
+  produtos: ProdutoSazonal[];
 }
 

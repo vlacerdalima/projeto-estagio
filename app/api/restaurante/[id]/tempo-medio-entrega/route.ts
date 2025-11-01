@@ -12,29 +12,49 @@ export async function GET(
     const period = searchParams.get('period') || 'anual';
     const year = searchParams.get('year');
     const month = searchParams.get('month');
+    const regiao = searchParams.get('regiao'); // opcional: filtrar por região
     
     const { filter: filterClause, params: dateParams } = buildDateFilter(year, month, period, 's.');
     
-    // Buscar tempo médio de entrega (supondo que existe um campo delivery_time ou calculated)
-    const queryParams = [id, ...dateParams];
+    // Construir query base
+    let baseQuery = '';
+    let queryParams: any[] = [id, ...dateParams];
+    
+    if (regiao && regiao !== 'todas') {
+      // Filtrar por região específica
+      baseQuery = `FROM sales s
+                   JOIN delivery_sales ds ON s.id = ds.sale_id
+                   JOIN delivery_addresses da ON ds.id = da.delivery_sale_id
+                   WHERE s.store_id = $1 
+                     AND s.delivery_seconds IS NOT NULL
+                     AND da.neighborhood = $${queryParams.length + 1}
+                     ${filterClause}`;
+      queryParams.push(regiao);
+    } else {
+      // Todas as regiões
+      baseQuery = `FROM sales s
+                   WHERE s.store_id = $1 
+                     AND s.delivery_seconds IS NOT NULL
+                     ${filterClause}`;
+    }
     
     // Tentar buscar tempo real, se não existir, usar mockado
     let result;
     try {
-      // Tentar query com campo delivery_time
+      // Tentar query com campo delivery_seconds
       result = await pool.query(
-        `SELECT AVG(delivery_time) as tempo_medio
-         FROM sales s
-         WHERE s.store_id = $1 ${filterClause} AND s.delivery_time IS NOT NULL`,
+        `SELECT AVG(s.delivery_seconds) as tempo_medio_segundos
+         ${baseQuery}`,
         queryParams
       );
     } catch (err) {
       // Se falhar, pode ser que o campo não exista, então usaremos mockado
-      console.log('Campo delivery_time não encontrado, usando dados mockados');
-      result = { rows: [{ tempo_medio: null }] };
+      console.log('❌ Erro ao buscar delivery_seconds:', err);
+      result = { rows: [{ tempo_medio_segundos: null }] };
     }
     
-    const tempoMedio = result.rows[0]?.tempo_medio ? parseFloat(result.rows[0].tempo_medio) : 45;
+    const tempoMedioSegundos = result.rows[0]?.tempo_medio_segundos ? parseFloat(result.rows[0].tempo_medio_segundos) : 2700; // 45 min default
+    const tempoMedio = Math.round(tempoMedioSegundos / 60); // converter segundos para minutos
     
     // Buscar período anterior para calcular variação
     let previousFilterClause = '';
@@ -56,19 +76,39 @@ export async function GET(
         : "AND s.created_at >= NOW() - INTERVAL '2 years' AND s.created_at < NOW() - INTERVAL '1 year'";
     }
     
+    // Construir query do período anterior
+    let previousBaseQuery = '';
+    let previousQueryParams: any[] = [id, ...previousParams];
+    
+    if (regiao && regiao !== 'todas') {
+      previousBaseQuery = `FROM sales s
+                           JOIN delivery_sales ds ON s.id = ds.sale_id
+                           JOIN delivery_addresses da ON ds.id = da.delivery_sale_id
+                           WHERE s.store_id = $1 
+                             AND s.delivery_seconds IS NOT NULL
+                             AND da.neighborhood = $${previousQueryParams.length + 1}
+                             ${previousFilterClause}`;
+      previousQueryParams.push(regiao);
+    } else {
+      previousBaseQuery = `FROM sales s
+                           WHERE s.store_id = $1 
+                             AND s.delivery_seconds IS NOT NULL
+                             ${previousFilterClause}`;
+    }
+    
     let previousResult;
     try {
       previousResult = await pool.query(
-        `SELECT AVG(delivery_time) as tempo_medio
-         FROM sales s
-         WHERE s.store_id = $1 ${previousFilterClause} AND s.delivery_time IS NOT NULL`,
-        [id, ...previousParams]
+        `SELECT AVG(s.delivery_seconds) as tempo_medio_segundos
+         ${previousBaseQuery}`,
+        previousQueryParams
       );
     } catch (err) {
-      previousResult = { rows: [{ tempo_medio: null }] };
+      previousResult = { rows: [{ tempo_medio_segundos: null }] };
     }
     
-    const previousTempoMedio = previousResult.rows[0]?.tempo_medio ? parseFloat(previousResult.rows[0].tempo_medio) : 50;
+    const previousTempoMedioSegundos = previousResult.rows[0]?.tempo_medio_segundos ? parseFloat(previousResult.rows[0].tempo_medio_segundos) : 3000; // 50 min default
+    const previousTempoMedio = Math.round(previousTempoMedioSegundos / 60); // converter segundos para minutos
     
     // Calcular variação percentual
     let variacao = 0;

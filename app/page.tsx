@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import RestaurantSearch from "@/components/RestaurantSearch";
 import CardControls from "./components/CardControls";
 import CardsGrid from "./components/CardsGrid";
@@ -45,7 +45,8 @@ export default function Home() {
     produtoRemovido: { x: 0, y: 0 },
     tendencia: { x: 0, y: 0 },
     desvioMedia: { x: 0, y: 0 },
-    tempoMedioEntrega: { x: 0, y: 0 }
+    tempoMedioEntrega: { x: 0, y: 0 },
+    sazonalidade: { x: 0, y: 0 }
   });
   
   // Refs dos cards - preciso criar aqui para passar ao hook
@@ -59,6 +60,7 @@ export default function Home() {
   const tendenciaRef = useRef<HTMLDivElement>(null);
   const desvioMediaRef = useRef<HTMLDivElement>(null);
   const tempoMedioEntregaRef = useRef<HTMLDivElement>(null);
+  const sazonalidadeRef = useRef<HTMLDivElement>(null);
   
   const refs: Record<CardType, React.RefObject<HTMLDivElement | null>> = {
     sales: salesRef,
@@ -70,7 +72,8 @@ export default function Home() {
     produtoRemovido: produtoRemovidoRef,
     tendencia: tendenciaRef,
     desvioMedia: desvioMediaRef,
-    tempoMedioEntrega: tempoMedioEntregaRef
+    tempoMedioEntrega: tempoMedioEntregaRef,
+    sazonalidade: sazonalidadeRef
   };
   
   // Drag dos cards
@@ -88,11 +91,17 @@ export default function Home() {
     loadingTicketMedio,
     produtosRanking,
     loadingRanking,
-    fetchRanking
+    fetchRanking,
+    regioesEntrega,
+    loadingRegioes,
+    fetchRegioes,
+    refetchTempoMedioEntrega
   } = useRestaurantData(selectedRestaurant, period, selectedYear, selectedMonth);
   
   // Estado do ranking
   const [showRanking, setShowRanking] = useState(false);
+  const [showRegioes, setShowRegioes] = useState(false);
+  const [selectedRegiao, setSelectedRegiao] = useState<string>('todas');
   
   // Funções para gerenciar cards de comparação
   const addComparisonCard = (cardType: string) => {
@@ -125,7 +134,8 @@ export default function Home() {
       produtoRemovido: { x: 0, y: 0 },
       tendencia: { x: 0, y: 0 },
       desvioMedia: { x: 0, y: 0 },
-      tempoMedioEntrega: { x: 0, y: 0 }
+      tempoMedioEntrega: { x: 0, y: 0 },
+      sazonalidade: { x: 0, y: 0 }
     });
     // Reset do ranking
     setShowRanking(false);
@@ -173,6 +183,17 @@ export default function Home() {
     }
     setShowRanking(!showRanking);
   };
+
+  // Refetch tempo médio de entrega quando a região mudar
+  useEffect(() => {
+    if (selectedRestaurant) {
+      // Só refetch se a região for diferente de 'todas' (inicial)
+      // O fetch inicial já é feito no useRestaurantData
+      if (selectedRegiao !== 'todas') {
+        refetchTempoMedioEntrega(selectedRegiao);
+      }
+    }
+  }, [selectedRegiao, selectedRestaurant, period, selectedYear, selectedMonth]);
 
   return (
     <div
@@ -242,15 +263,30 @@ export default function Home() {
           tendenciaVendas={data.tendenciaVendas}
           desvioMedia={data.desvioMedia}
           tempoMedioEntrega={data.tempoMedioEntrega}
+          sazonalidadeProdutos={data.sazonalidadeProdutos}
           loadingTicketMedio={loadingTicketMedio}
           showRanking={showRanking}
           produtosRanking={produtosRanking}
           loadingRanking={loadingRanking}
+          showRegioes={showRegioes}
+          regioesEntrega={regioesEntrega}
+          loadingRegioes={loadingRegioes}
+          selectedRegiao={selectedRegiao}
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
           onRemoveCard={removeCard}
           onToggleRanking={toggleRanking}
           onFetchRanking={fetchRanking}
+          onToggleRegioes={() => {
+            if (!showRegioes && regioesEntrega.length === 0) {
+              fetchRegioes();
+            }
+            setShowRegioes(!showRegioes);
+          }}
+          onSelectRegiao={(regiao: string) => {
+            setSelectedRegiao(regiao);
+            setShowRegioes(false);
+          }}
           refs={refs}
           onPositionChange={(type, newPosition) => {
             setPositions(prev => ({ ...prev, [type]: newPosition }));

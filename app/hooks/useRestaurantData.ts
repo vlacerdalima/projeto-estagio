@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Period, VendasTurno, TicketMedio, CanalData, ProdutoRanking, ProdutoMaisVendido, ProdutoMaisRemovido, TendenciaVendas, DesvioMedia, TempoMedioEntrega } from '@/app/types';
+import type { Period, VendasTurno, TicketMedio, CanalData, ProdutoRanking, ProdutoMaisVendido, ProdutoMaisRemovido, TendenciaVendas, DesvioMedia, TempoMedioEntrega, SazonalidadeProdutos, RegiaoEntrega } from '@/app/types';
 
 interface RestaurantData {
   sales: number | null;
@@ -12,6 +12,7 @@ interface RestaurantData {
   tendenciaVendas: TendenciaVendas | null;
   desvioMedia: DesvioMedia | null;
   tempoMedioEntrega: TempoMedioEntrega | null;
+  sazonalidadeProdutos: SazonalidadeProdutos | null;
 }
 
 export function useRestaurantData(selectedRestaurant: number | null, period: Period, year?: string | number, month?: string | number) {
@@ -25,13 +26,16 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
         vendasCanal: [],
         tendenciaVendas: null,
         desvioMedia: null,
-        tempoMedioEntrega: null
+        tempoMedioEntrega: null,
+        sazonalidadeProdutos: null
       });
   
   const [loading, setLoading] = useState(false);
   const [loadingTicketMedio, setLoadingTicketMedio] = useState(false);
   const [produtosRanking, setProdutosRanking] = useState<ProdutoRanking[]>([]);
   const [loadingRanking, setLoadingRanking] = useState(false);
+  const [regioesEntrega, setRegioesEntrega] = useState<RegiaoEntrega[]>([]);
+  const [loadingRegioes, setLoadingRegioes] = useState(false);
 
   useEffect(() => {
     if (selectedRestaurant) {
@@ -43,7 +47,7 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
           const monthParam = month && month !== 'todos' ? `&month=${month}` : '';
           const params = `period=${period}${yearParam}${monthParam}`;
           
-          const [salesRes, revenueRes, produtoRes, produtoRemovidoRes, turnoRes, ticketMedioRes, canalRes, tendenciaRes, desvioMediaRes, tempoMedioEntregaRes] = await Promise.all([
+          const [salesRes, revenueRes, produtoRes, produtoRemovidoRes, turnoRes, ticketMedioRes, canalRes, tendenciaRes, desvioMediaRes, tempoMedioEntregaRes, sazonalidadeRes] = await Promise.all([
             fetch(`/api/restaurante/${selectedRestaurant}/vendas?${params}`),
             fetch(`/api/restaurante/${selectedRestaurant}/faturamento?${params}`),
             fetch(`/api/restaurante/${selectedRestaurant}/produto-mais-vendido?${params}`),
@@ -53,7 +57,8 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
             fetch(`/api/restaurante/${selectedRestaurant}/vendas-por-canal?${params}`),
             fetch(`/api/restaurante/${selectedRestaurant}/tendencia-vendas`), // Sem parâmetros - sempre últimos 12 meses
             fetch(`/api/restaurante/${selectedRestaurant}/desvio-media`),
-            fetch(`/api/restaurante/${selectedRestaurant}/tempo-medio-entrega?${params}`)
+            fetch(`/api/restaurante/${selectedRestaurant}/tempo-medio-entrega?${params}`),
+            fetch(`/api/restaurante/${selectedRestaurant}/sazonalidade-produtos?${params}`)
           ]);
           
           const salesData = await salesRes.json();
@@ -66,6 +71,7 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
           const tendenciaData = await tendenciaRes.json();
           const desvioMediaData = await desvioMediaRes.json();
           const tempoMedioEntregaData = await tempoMedioEntregaRes.json();
+          const sazonalidadeData = await sazonalidadeRes.json();
           
           setData({
             sales: salesData.total,
@@ -90,7 +96,8 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
             tempoMedioEntrega: {
               tempoMedio: tempoMedioEntregaData.tempoMedio,
               variacao: tempoMedioEntregaData.variacao
-            }
+            },
+            sazonalidadeProdutos: sazonalidadeData
           });
           setLoading(false);
           setLoadingTicketMedio(false);
@@ -127,13 +134,58 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
     }
   };
 
+  const fetchRegioes = async () => {
+    if (selectedRestaurant) {
+      setLoadingRegioes(true);
+      try {
+        const yearParam = year && year !== 'todos' ? `&year=${year}` : '';
+        const monthParam = month && month !== 'todos' ? `&month=${month}` : '';
+        const params = `period=${period}${yearParam}${monthParam}`;
+        const response = await fetch(`/api/restaurante/${selectedRestaurant}/regioes-entrega?${params}`);
+        const data = await response.json();
+        setRegioesEntrega(data);
+      } catch (e) {
+        console.error('Erro ao buscar regiões:', e);
+        setRegioesEntrega([]);
+      } finally {
+        setLoadingRegioes(false);
+      }
+    }
+  };
+
+  const refetchTempoMedioEntrega = async (regiao: string = 'todas') => {
+    if (selectedRestaurant) {
+      try {
+        const yearParam = year && year !== 'todos' ? `&year=${year}` : '';
+        const monthParam = month && month !== 'todos' ? `&month=${month}` : '';
+        const params = `period=${period}${yearParam}${monthParam}&regiao=${regiao}`;
+        const response = await fetch(`/api/restaurante/${selectedRestaurant}/tempo-medio-entrega?${params}`);
+        const tempoMedioData = await response.json();
+        
+        setData(prev => ({
+          ...prev,
+          tempoMedioEntrega: {
+            tempoMedio: tempoMedioData.tempoMedio,
+            variacao: tempoMedioData.variacao
+          }
+        }));
+      } catch (e) {
+        console.error('Erro ao refetch tempo médio:', e);
+      }
+    }
+  };
+
   return {
     data,
     loading,
     loadingTicketMedio,
     produtosRanking,
     loadingRanking,
-    fetchRanking
+    fetchRanking,
+    regioesEntrega,
+    loadingRegioes,
+    fetchRegioes,
+    refetchTempoMedioEntrega
   };
 }
 

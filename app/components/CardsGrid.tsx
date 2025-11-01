@@ -19,7 +19,9 @@ import type {
   ProdutoRanking,
   TendenciaVendas,
   DesvioMedia,
-  TempoMedioEntrega
+  TempoMedioEntrega,
+  SazonalidadeProdutos,
+  RegiaoEntrega
 } from '@/app/types';
 
 interface CardsGridProps {
@@ -38,16 +40,23 @@ interface CardsGridProps {
   tendenciaVendas: TendenciaVendas | null;
   desvioMedia: DesvioMedia | null;
   tempoMedioEntrega: TempoMedioEntrega | null;
+  sazonalidadeProdutos: SazonalidadeProdutos | null;
   loadingTicketMedio: boolean;
   showRanking: boolean;
   produtosRanking: ProdutoRanking[];
   loadingRanking: boolean;
+  showRegioes: boolean;
+  regioesEntrega: RegiaoEntrega[];
+  loadingRegioes: boolean;
+  selectedRegiao: string;
   onMouseDown: (type: CardType, e: React.MouseEvent) => void;
   onTouchStart: (type: CardType, e: React.TouchEvent) => void;
   refs: Record<CardType, React.RefObject<HTMLDivElement | null>>;
   onRemoveCard: (type: CardType) => void;
   onToggleRanking: () => void;
   onFetchRanking: () => void;
+  onToggleRegioes: () => void;
+  onSelectRegiao: (regiao: string) => void;
   onPositionChange?: (type: CardType, position: Position) => void;
 }
 
@@ -67,21 +76,45 @@ export default function CardsGrid({
   tendenciaVendas,
   desvioMedia,
   tempoMedioEntrega,
+  sazonalidadeProdutos,
   loadingTicketMedio,
   showRanking,
   produtosRanking,
   loadingRanking,
+  showRegioes,
+  regioesEntrega,
+  loadingRegioes,
+  selectedRegiao,
   onMouseDown,
   onTouchStart,
   onRemoveCard,
   onToggleRanking,
   onFetchRanking,
+  onToggleRegioes,
+  onSelectRegiao,
   refs,
   onPositionChange
 }: CardsGridProps) {
   // Estados para calcular posições iniciais dos cards
   const [cardStyles, setCardStyles] = useState<Record<CardType, React.CSSProperties>>({} as Record<CardType, React.CSSProperties>);
   const hasCalculatedInitialStyles = useRef(false);
+  const previousTemplateRef = useRef<TemplateType>(currentTemplate);
+  const [filtroRegiao, setFiltroRegiao] = useState<string>('');
+
+  // Resetar cálculo quando o template mudar
+  useEffect(() => {
+    if (previousTemplateRef.current !== currentTemplate) {
+      hasCalculatedInitialStyles.current = false;
+      previousTemplateRef.current = currentTemplate;
+    }
+  }, [currentTemplate]);
+
+  // Resetar filtro quando o dropdown fechar
+  useEffect(() => {
+    if (!showRegioes) {
+      setFiltroRegiao('');
+    }
+  }, [showRegioes]);
 
   // Calcular posições iniciais baseadas no grid (apenas uma vez)
   useEffect(() => {
@@ -100,7 +133,7 @@ export default function CardsGrid({
       const styles: Record<CardType, React.CSSProperties> = {} as Record<CardType, React.CSSProperties>;
       
       // Ordem base dos cards
-      const allCardsOrder = ['sales', 'revenue', 'ticketMedio', 'turno', 'tendencia', 'canal', 'produto', 'produtoRemovido', 'desvioMedia', 'tempoMedioEntrega'];
+      const allCardsOrder = ['sales', 'revenue', 'ticketMedio', 'turno', 'tendencia', 'canal', 'produto', 'produtoRemovido', 'desvioMedia', 'tempoMedioEntrega', 'sazonalidade'];
       
       // Filtrar apenas cards visíveis na ordem original
       const visibleCardsInOrder = allCardsOrder.filter(cardType => visibleCards[cardType as CardType]);
@@ -475,39 +508,184 @@ export default function CardsGrid({
       )}
 
       {visibleCards.tempoMedioEntrega && (
-        <DraggableCard
-          ref={refs.tempoMedioEntrega}
-          type="tempoMedioEntrega"
-          position={positions.tempoMedioEntrega || { x: 0, y: 0 }}
-          isDragging={isDragging === 'tempoMedioEntrega'}
-          onMouseDown={(e) => onMouseDown('tempoMedioEntrega', e)}
-          onTouchStart={(e) => onTouchStart('tempoMedioEntrega', e)}
-          onRemove={() => onRemoveCard('tempoMedioEntrega')}
-          style={cardStyles.tempoMedioEntrega}
+        <div 
+          className={showRegioes ? 'relative z-[9999]' : ''}
         >
-          <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
+          <DraggableCard
+            ref={refs.tempoMedioEntrega}
+            type="tempoMedioEntrega"
+            position={positions.tempoMedioEntrega || { x: 0, y: 0 }}
+            isDragging={isDragging === 'tempoMedioEntrega'}
+            onMouseDown={(e) => onMouseDown('tempoMedioEntrega', e)}
+            onTouchStart={(e) => onTouchStart('tempoMedioEntrega', e)}
+            onRemove={() => onRemoveCard('tempoMedioEntrega')}
+            style={cardStyles.tempoMedioEntrega}
+          >
+            <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
             Tempo Médio de Entrega
           </div>
           {tempoMedioEntrega ? (
             <div>
-              <div className="text-xl md:text-3xl font-semibold text-[--color-primary] mb-2">
-                {tempoMedioEntrega.tempoMedio.toFixed(0)} min
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                {tempoMedioEntrega.variacao !== 0 && (
-                  <>
-                    <span className={tempoMedioEntrega.variacao >= 0 ? 'text-red-600' : 'text-green-600'}>
-                      {tempoMedioEntrega.variacao >= 0 ? '▲' : '▼'}
-                    </span>
-                    <span className={tempoMedioEntrega.variacao >= 0 ? 'text-red-600' : 'text-green-600'}>
-                      {Math.abs(tempoMedioEntrega.variacao).toFixed(1)}% vs período anterior
-                    </span>
-                  </>
-                )}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1">
+                  <div className="text-xl md:text-3xl font-semibold text-[--color-primary] mb-1">
+                    {tempoMedioEntrega.tempoMedio.toFixed(0)} min
+                  </div>
+                  <div className="text-sm text-[--color-muted-foreground]">
+                    {selectedRegiao === 'todas' ? 'Todas as regiões' : selectedRegiao}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm mt-1">
+                    {tempoMedioEntrega.variacao !== 0 && (
+                      <>
+                        <span className={tempoMedioEntrega.variacao >= 0 ? 'text-red-600' : 'text-green-600'}>
+                          {tempoMedioEntrega.variacao >= 0 ? '▲' : '▼'}
+                        </span>
+                        <span className={tempoMedioEntrega.variacao >= 0 ? 'text-red-600' : 'text-green-600'}>
+                          {Math.abs(tempoMedioEntrega.variacao).toFixed(1)}% vs período anterior
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!showRegioes && regioesEntrega.length === 0) {
+                      // fetchRegioes será chamado via onToggleRegioes em page.tsx
+                    }
+                    onToggleRegioes();
+                  }}
+                  className="flex items-center justify-center w-6 h-6 text-zinc-400 hover:text-[#fa8072] transition-colors"
+                  title="Ver regiões"
+                >
+                  {showRegioes ? '▼' : '▶'}
+                </button>
               </div>
             </div>
           ) : (
             <div className="text-xl md:text-3xl font-semibold text-[--color-primary]">—</div>
+          )}
+          </DraggableCard>
+          {showRegioes && (
+            <div className="absolute top-full left-0 mt-4 bg-white border border-[--color-primary]/30 rounded-b-lg shadow-lg p-4 max-h-[400px] overflow-y-auto z-[10000] min-w-[300px] max-w-[400px]">
+              <input
+                type="text"
+                placeholder="Filtrar região..."
+                value={filtroRegiao}
+                onChange={(e) => setFiltroRegiao(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full px-3 py-2 mb-3 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#fa8072]/50 focus:border-[#fa8072] text-black placeholder:text-gray-400"
+                autoFocus
+              />
+              <div className="space-y-1">
+                {loadingRegioes ? (
+                  <div className="text-xs text-zinc-500 text-center py-4">Carregando dados...</div>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        onSelectRegiao('todas');
+                        setFiltroRegiao('');
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded text-sm transition-colors whitespace-nowrap ${
+                        selectedRegiao === 'todas'
+                          ? 'bg-[#fa8072]/20 font-semibold text-[#fa8072]'
+                          : 'hover:bg-gray-100 text-zinc-900'
+                      }`}
+                    >
+                      Todas as regiões
+                    </button>
+                    {regioesEntrega
+                      .filter(regiao => 
+                        regiao.regiao.toLowerCase().includes(filtroRegiao.toLowerCase())
+                      )
+                      .length > 0 ? (
+                      regioesEntrega
+                        .filter(regiao => 
+                          regiao.regiao.toLowerCase().includes(filtroRegiao.toLowerCase())
+                        )
+                        .map((regiao, index) => (
+                          <button
+                            key={index}
+                            onClick={() => {
+                              onSelectRegiao(regiao.regiao);
+                              setFiltroRegiao('');
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded text-sm transition-colors whitespace-nowrap ${
+                              selectedRegiao === regiao.regiao
+                                ? 'bg-[#fa8072]/20 font-semibold text-[#fa8072]'
+                                : 'hover:bg-gray-100 text-zinc-900'
+                            }`}
+                          >
+                            <span>{regiao.regiao}</span>
+                            <span className="text-xs text-zinc-500 ml-2">{regiao.tempoMedioMinutos} min</span>
+                          </button>
+                        ))
+                    ) : filtroRegiao ? (
+                      <div className="text-xs text-zinc-500 text-center py-2">Nenhuma região encontrada</div>
+                    ) : (
+                      <div className="text-xs text-zinc-500 text-center py-2">Sem regiões disponíveis</div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {visibleCards.sazonalidade && (
+        <DraggableCard
+          ref={refs.sazonalidade}
+          type="sazonalidade"
+          position={positions.sazonalidade || { x: 0, y: 0 }}
+          isDragging={isDragging === 'sazonalidade'}
+          onMouseDown={(e) => onMouseDown('sazonalidade', e)}
+          onTouchStart={(e) => onTouchStart('sazonalidade', e)}
+          onRemove={() => onRemoveCard('sazonalidade')}
+          style={cardStyles.sazonalidade}
+        >
+          <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
+            Produtos Sazonais
+          </div>
+          <div className="text-xs text-gray-400 mb-2">
+            diferença aos meses médios (últimos 24 meses)
+          </div>
+          {sazonalidadeProdutos && sazonalidadeProdutos.produtos.length > 0 ? (
+            <div className="space-y-2">
+              {sazonalidadeProdutos.produtos.map((produto, index) => (
+                <div key={index} className="border-b border-gray-100 pb-2 last:border-0 last:pb-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium truncate flex-1" title={produto.nome}>
+                      {produto.nome}
+                    </span>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded bg-green-100 text-green-700 ml-2 flex-shrink-0">
+                      +{produto.lift}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">
+                      {produto.mesPico}
+                    </span>
+                    {produto.pontosSazonalidade && produto.pontosSazonalidade.length > 0 && (
+                      <div className="flex items-end gap-0.5 h-8 w-20">
+                        {produto.pontosSazonalidade.map((ponto, i) => (
+                          <div
+                            key={i}
+                            className="flex-1 bg-gradient-to-t from-blue-400 to-blue-600 rounded-t"
+                            style={{ height: `${(ponto / 250) * 100}%` }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-gray-400 italic">
+              Nenhum padrão sazonal forte encontrado no período
+            </div>
           )}
         </DraggableCard>
       )}

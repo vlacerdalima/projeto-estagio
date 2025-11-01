@@ -83,7 +83,8 @@ export default function CardControls({
     produtoRemovido: 'Produto Mais Removido',
     tendencia: 'Tendência de Crescimento',
     desvioMedia: 'Desvio da Média Histórica',
-    tempoMedioEntrega: 'Tempo Médio de Entrega'
+    tempoMedioEntrega: 'Tempo Médio de Entrega',
+    sazonalidade: 'Sazonalidade de Produtos'
   };
 
   // Quando em modo comparação, usar os cards de comparação
