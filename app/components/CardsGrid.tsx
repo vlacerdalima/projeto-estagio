@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import DraggableCard from './DraggableCard';
 import SalesByShiftChart from "@/components/SalesByShiftChart";
 import VendasPorCanalChart from "@/components/VendasPorCanalChart";
@@ -68,13 +68,150 @@ export default function CardsGrid({
   onFetchRanking,
   refs
 }: CardsGridProps) {
+  const [produtoPosition, setProdutoPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const GAP_PIXELS = 12; // Espaçamento fixo em pixels entre os cards
+
+  // Calcular posição absoluta do card "produto" baseado na posição e altura do card "sales"
+  useEffect(() => {
+    if (!visibleCards.sales || !visibleCards.produto) {
+      setProdutoPosition(null);
+      return;
+    }
+
+    const calculatePosition = () => {
+      if (refs.sales.current && refs.produto.current) {
+        const salesCard = refs.sales.current;
+        const produtoCard = refs.produto.current;
+        const salesRect = salesCard.getBoundingClientRect();
+        const produtoRect = produtoCard.getBoundingClientRect();
+        const gridContainer = salesCard.closest('.grid');
+        
+        if (!gridContainer) return;
+        
+        const gridRect = gridContainer.getBoundingClientRect();
+        
+        // Calcular a largura de uma coluna do grid
+        const gridComputedStyle = window.getComputedStyle(gridContainer);
+        const gridGap = parseInt(gridComputedStyle.gap) || 0;
+        const gridWidth = gridRect.width;
+        
+        // Em desktop (lg), são 3 colunas. Em tablet (md), são 2. Em mobile, 1.
+        const isDesktop = window.innerWidth >= 1024;
+        const isTablet = window.innerWidth >= 768;
+        const numColumns = isDesktop ? 3 : (isTablet ? 2 : 1);
+        const columnWidth = (gridWidth - (gridGap * (numColumns - 1))) / numColumns;
+        
+        // Determinar em qual coluna cada card está
+        const salesColumn = Math.floor((salesRect.left - gridRect.left) / (columnWidth + gridGap));
+        const produtoColumn = Math.floor((produtoRect.left - gridRect.left) / (columnWidth + gridGap));
+        
+        // Verificar se estão na mesma coluna
+        const areInSameColumn = salesColumn === produtoColumn;
+        
+        // Verificar se o produto está abaixo do sales na mesma coluna
+        const isProdutoBelowSales = produtoRect.top > salesRect.bottom && areInSameColumn;
+        
+        // Verificar se o card "turno" está visível e pode estar na mesma coluna
+        // Se estiver, não usar position: absolute para evitar conflitos
+        const turnoCard = refs.turno?.current;
+        let shouldUseAbsolute = areInSameColumn && isProdutoBelowSales;
+        
+        if (turnoCard && visibleCards.turno) {
+          const turnoRect = turnoCard.getBoundingClientRect();
+          const turnoColumn = Math.floor((turnoRect.left - gridRect.left) / (columnWidth + gridGap));
+          
+          // Se o turno também está na mesma coluna do sales, não usar absolute
+          // (isso acontece na tela geral)
+          if (turnoColumn === salesColumn) {
+            shouldUseAbsolute = false;
+          }
+        }
+        
+        // Só usar position: absolute se estiverem na mesma coluna, produto abaixo do sales,
+        // e não houver conflito com o card turno
+        if (shouldUseAbsolute) {
+          // Posição relativa do card sales dentro do grid
+          const salesTop = salesRect.top - gridRect.top;
+          const salesLeft = salesRect.left - gridRect.left;
+          const salesHeight = salesRect.height;
+          const salesWidth = salesRect.width;
+          
+          // Posição absoluta do card produto = topo do sales + altura do sales + gap fixo
+          const produtoTop = salesTop + salesHeight + GAP_PIXELS;
+          
+          setProdutoPosition({
+            top: produtoTop,
+            left: salesLeft,
+            width: salesWidth
+          });
+        } else {
+          // Não usar position: absolute
+          setProdutoPosition(null);
+        }
+      }
+    };
+
+    // Calcular após um pequeno delay para garantir que o DOM está renderizado
+    // Usar requestAnimationFrame para garantir que o layout foi aplicado
+    const timeoutId = setTimeout(() => {
+      requestAnimationFrame(() => {
+        calculatePosition();
+      });
+    }, 0);
+
+    // Observar mudanças de tamanho do card sales, produto e reorganizações do grid
+    const salesCard = refs.sales.current;
+    const produtoCard = refs.produto.current;
+    let resizeObserver: ResizeObserver | null = null;
+    let produtoResizeObserver: ResizeObserver | null = null;
+    let gridResizeObserver: ResizeObserver | null = null;
+    
+    if (salesCard) {
+      const gridContainer = salesCard.closest('.grid');
+      
+      resizeObserver = new ResizeObserver(() => {
+        calculatePosition();
+      });
+      
+      resizeObserver.observe(salesCard);
+      
+      if (produtoCard) {
+        produtoResizeObserver = new ResizeObserver(() => {
+          calculatePosition();
+        });
+        
+        produtoResizeObserver.observe(produtoCard);
+      }
+      
+      if (gridContainer) {
+        gridResizeObserver = new ResizeObserver(() => {
+          calculatePosition();
+        });
+        
+        gridResizeObserver.observe(gridContainer);
+      }
+    }
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      if (produtoResizeObserver) {
+        produtoResizeObserver.disconnect();
+      }
+      if (gridResizeObserver) {
+        gridResizeObserver.disconnect();
+      }
+    };
+  }, [visibleCards.sales, visibleCards.produto, visibleCards.turno, sales, produtoMaisVendido, showRanking, loadingRanking, tendenciaVendas, refs.sales, refs.produto, refs.turno]);
 
   if (!Object.values(visibleCards).some(v => v)) {
     return null;
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-full mt-0 items-start content-start">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-full mt-0 items-start content-start relative">
       {visibleCards.sales && (
         <DraggableCard
           ref={refs.sales}
@@ -126,33 +263,29 @@ export default function CardsGrid({
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
             Tendência de Crescimento
           </div>
-          <div className="flex items-end justify-between gap-2">
-            <div className="flex-1">
-              {tendenciaVendas ? (
-                <>
-                  <div className={`text-2xl md:text-3xl font-semibold mb-1 ${
-                    tendenciaVendas.taxaCrescimento >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {tendenciaVendas.taxaCrescimento >= 0 ? '+' : ''}{tendenciaVendas.taxaCrescimento.toFixed(1)}%
-                  </div>
-                  <div className="text-xs text-[--color-muted-foreground]">
-                    / mês
-                  </div>
-                </>
-              ) : (
-                <div className="text-lg text-zinc-400">—</div>
-              )}
-            </div>
-            <div className="flex-shrink-0">
-              {tendenciaVendas && tendenciaVendas.dadosMensais.length > 0 ? (
+          {tendenciaVendas ? (
+            <>
+              <div className="mb-3">
+                <div className={`text-2xl md:text-3xl font-semibold mb-1 ${
+                  tendenciaVendas.taxaCrescimento >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {tendenciaVendas.taxaCrescimento >= 0 ? '+' : ''}{tendenciaVendas.taxaCrescimento.toFixed(1)}%
+                </div>
+                <div className="text-xs text-[--color-muted-foreground]">
+                  / mês
+                </div>
+              </div>
+              {tendenciaVendas.dadosMensais.length > 0 ? (
                 <TendenciaVendasChart dadosMensais={tendenciaVendas.dadosMensais} />
               ) : (
-                <div className="w-[120px] h-12 flex items-center justify-center text-xs text-zinc-400">
+                <div className="w-full h-40 flex items-center justify-center text-xs text-zinc-400">
                   —
                 </div>
               )}
-            </div>
-          </div>
+            </>
+          ) : (
+            <div className="text-lg text-zinc-400">—</div>
+          )}
         </DraggableCard>
       )}
 
@@ -176,7 +309,16 @@ export default function CardsGrid({
       )}
 
       {visibleCards.produto && (
-        <div className={showRanking ? 'relative z-[9999]' : ''}>
+        <div 
+          className={showRanking ? 'relative z-[9999]' : ''}
+          style={produtoPosition !== null && visibleCards.sales ? {
+            position: 'absolute',
+            top: `${produtoPosition.top}px`,
+            left: `${produtoPosition.left}px`,
+            width: `${produtoPosition.width}px`,
+            pointerEvents: 'auto'
+          } : undefined}
+        >
           <DraggableCard
             ref={refs.produto}
             type="produto"
