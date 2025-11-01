@@ -81,7 +81,8 @@ export default function CardControls({
     ticketMedio: 'Ticket Médio',
     canal: 'Vendas por Canal',
     produtoRemovido: 'Produto Mais Removido',
-    tendencia: 'Tendência de Crescimento'
+    tendencia: 'Tendência de Crescimento',
+    desvioMedia: 'Desvio da Média Histórica'
   };
 
   // Quando em modo comparação, usar os cards de comparação

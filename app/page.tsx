@@ -43,7 +43,8 @@ export default function Home() {
     ticketMedio: { x: 0, y: 0 },
     canal: { x: 0, y: 0 },
     produtoRemovido: { x: 0, y: 0 },
-    tendencia: { x: 0, y: 0 }
+    tendencia: { x: 0, y: 0 },
+    desvioMedia: { x: 0, y: 0 }
   });
   
   // Refs dos cards - preciso criar aqui para passar ao hook
@@ -55,6 +56,7 @@ export default function Home() {
   const canalRef = useRef<HTMLDivElement>(null);
   const produtoRemovidoRef = useRef<HTMLDivElement>(null);
   const tendenciaRef = useRef<HTMLDivElement>(null);
+  const desvioMediaRef = useRef<HTMLDivElement>(null);
   
   const refs: Record<CardType, React.RefObject<HTMLDivElement | null>> = {
     sales: salesRef,
@@ -64,7 +66,8 @@ export default function Home() {
     ticketMedio: ticketMedioRef,
     canal: canalRef,
     produtoRemovido: produtoRemovidoRef,
-    tendencia: tendenciaRef
+    tendencia: tendenciaRef,
+    desvioMedia: desvioMediaRef
   };
   
   // Drag dos cards
@@ -115,7 +118,10 @@ export default function Home() {
       produto: { x: 0, y: 0 },
       turno: { x: 0, y: 0 },
       ticketMedio: { x: 0, y: 0 },
-      canal: { x: 0, y: 0 }
+      canal: { x: 0, y: 0 },
+      produtoRemovido: { x: 0, y: 0 },
+      tendencia: { x: 0, y: 0 },
+      desvioMedia: { x: 0, y: 0 }
     });
     // Reset do ranking
     setShowRanking(false);
@@ -229,6 +235,7 @@ export default function Home() {
           ticketMedio={data.ticketMedio}
           vendasCanal={data.vendasCanal}
           tendenciaVendas={data.tendenciaVendas}
+          desvioMedia={data.desvioMedia}
           loadingTicketMedio={loadingTicketMedio}
           showRanking={showRanking}
           produtosRanking={produtosRanking}
@@ -239,6 +246,9 @@ export default function Home() {
           onToggleRanking={toggleRanking}
           onFetchRanking={fetchRanking}
           refs={refs}
+          onPositionChange={(type, newPosition) => {
+            setPositions(prev => ({ ...prev, [type]: newPosition }));
+          }}
         />
         )}
       </main>

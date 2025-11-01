@@ -16,7 +16,8 @@ import type {
   ProdutoMaisVendido,
   ProdutoMaisRemovido,
   ProdutoRanking,
-  TendenciaVendas
+  TendenciaVendas,
+  DesvioMedia
 } from '@/app/types';
 
 interface CardsGridProps {
@@ -32,6 +33,7 @@ interface CardsGridProps {
   ticketMedio: TicketMedio | null;
   vendasCanal: CanalData[];
   tendenciaVendas: TendenciaVendas | null;
+  desvioMedia: DesvioMedia | null;
   loadingTicketMedio: boolean;
   showRanking: boolean;
   produtosRanking: ProdutoRanking[];
@@ -42,6 +44,7 @@ interface CardsGridProps {
   onRemoveCard: (type: CardType) => void;
   onToggleRanking: () => void;
   onFetchRanking: () => void;
+  onPositionChange?: (type: CardType, position: Position) => void;
 }
 
 export default function CardsGrid({
@@ -57,6 +60,7 @@ export default function CardsGrid({
   ticketMedio,
   vendasCanal,
   tendenciaVendas,
+  desvioMedia,
   loadingTicketMedio,
   showRanking,
   produtosRanking,
@@ -66,152 +70,214 @@ export default function CardsGrid({
   onRemoveCard,
   onToggleRanking,
   onFetchRanking,
-  refs
+  refs,
+  onPositionChange
 }: CardsGridProps) {
-  const [produtoPosition, setProdutoPosition] = useState<{ top: number; left: number; width: number } | null>(null);
-  const GAP_PIXELS = 12; // Espaçamento fixo em pixels entre os cards
+  // Estado para armazenar os offsets de top calculados para cada card
+  const [cardTopOffsets, setCardTopOffsets] = useState<Record<CardType, number>>({} as Record<CardType, number>);
+  // Estado para armazenar qual coluna cada card está (para aplicar gap horizontal)
+  const [cardColumns, setCardColumns] = useState<Record<CardType, number>>({} as Record<CardType, number>);
 
-  // Calcular posição absoluta do card "produto" baseado na posição e altura do card "sales"
+  // Constantes de espaçamento (definidas aqui para reutilização)
+  const verticalGap = -500; // Espaçamento vertical entre cards (pixels) - valores mais negativos = menos espaço
+  const horizontalGap = 12; // Espaçamento horizontal entre colunas (pixels)
+
+  // Calcular posicionamento simples: colocar cada card no ponto mais baixo
   useEffect(() => {
-    if (!visibleCards.sales || !visibleCards.produto) {
-      setProdutoPosition(null);
-      return;
-    }
+    const calculateTopOffsets = () => {
+      // Determinar número de colunas baseado no breakpoint
+      const isDesktop = window.innerWidth >= 1024;
+      const isTablet = window.innerWidth >= 768;
+      const numColumns = isDesktop ? 3 : (isTablet ? 2 : 1);
 
-    const calculatePosition = () => {
-      if (refs.sales.current && refs.produto.current) {
-        const salesCard = refs.sales.current;
-        const produtoCard = refs.produto.current;
-        const salesRect = salesCard.getBoundingClientRect();
-        const produtoRect = produtoCard.getBoundingClientRect();
-        const gridContainer = salesCard.closest('.grid');
+      // Array para rastrear a altura do ponto mais baixo de cada coluna (em pixels)
+      // Representa onde o último card nesta coluna TERMINA (offset do card + altura do card)
+      const columnBottomPoints: number[] = new Array(numColumns).fill(0);
+      // Array para rastrear quantos cards já foram colocados em cada coluna
+      const columnCardCounts: number[] = new Array(numColumns).fill(0);
+      // Rastrear os offsets e alturas de cada card na coluna (para evitar sobreposição)
+      const columnCardInfo: Array<Array<{ offset: number; height: number }>> = new Array(numColumns).fill(null).map(() => []);
+      const offsets: Record<CardType, number> = {} as Record<CardType, number>;
+      const columns: Record<CardType, number> = {} as Record<CardType, number>;
+
+      // Ordem de renderização dos cards (baseada na ordem do código)
+      const cardOrder: CardType[] = ['sales', 'revenue', 'ticketMedio', 'turno', 'tendencia', 'canal', 'produto', 'produtoRemovido', 'desvioMedia'];
+
+      // Processar cada card na ordem
+      cardOrder.forEach((cardType) => {
+        if (!visibleCards[cardType]) return;
+
+        const cardRef = refs[cardType]?.current;
+        if (!cardRef) return;
+
+        // Calcular a altura real do card (sem marginTop aplicado ainda)
+        const cardRect = cardRef.getBoundingClientRect();
+        const cardHeight = cardRect.height;
+
+        // Encontrar a coluna com o ponto mais baixo (menor altura acumulada)
+        let minBottom = columnBottomPoints[0];
+        let minColumn = 0;
+        for (let i = 1; i < numColumns; i++) {
+          if (columnBottomPoints[i] < minBottom) {
+            minBottom = columnBottomPoints[i];
+            minColumn = i;
+          }
+        }
+
+        // Se é o primeiro card nesta coluna, offset é 0
+        // Senão, offset é o ponto mais baixo da coluna + gap vertical (onde termina o card anterior + espaçamento)
+        const isFirstCardInColumn = columnCardCounts[minColumn] === 0;
         
-        if (!gridContainer) return;
-        
-        const gridRect = gridContainer.getBoundingClientRect();
-        
-        // Calcular a largura de uma coluna do grid
-        const gridComputedStyle = window.getComputedStyle(gridContainer);
-        const gridGap = parseInt(gridComputedStyle.gap) || 0;
-        const gridWidth = gridRect.width;
-        
-        // Em desktop (lg), são 3 colunas. Em tablet (md), são 2. Em mobile, 1.
-        const isDesktop = window.innerWidth >= 1024;
-        const isTablet = window.innerWidth >= 768;
-        const numColumns = isDesktop ? 3 : (isTablet ? 2 : 1);
-        const columnWidth = (gridWidth - (gridGap * (numColumns - 1))) / numColumns;
-        
-        // Determinar em qual coluna cada card está
-        const salesColumn = Math.floor((salesRect.left - gridRect.left) / (columnWidth + gridGap));
-        const produtoColumn = Math.floor((produtoRect.left - gridRect.left) / (columnWidth + gridGap));
-        
-        // Verificar se estão na mesma coluna
-        const areInSameColumn = salesColumn === produtoColumn;
-        
-        // Verificar se o produto está abaixo do sales na mesma coluna
-        const isProdutoBelowSales = produtoRect.top > salesRect.bottom && areInSameColumn;
-        
-        // Verificar se o card "turno" está visível e pode estar na mesma coluna
-        // Se estiver, não usar position: absolute para evitar conflitos
-        const turnoCard = refs.turno?.current;
-        let shouldUseAbsolute = areInSameColumn && isProdutoBelowSales;
-        
-        if (turnoCard && visibleCards.turno) {
-          const turnoRect = turnoCard.getBoundingClientRect();
-          const turnoColumn = Math.floor((turnoRect.left - gridRect.left) / (columnWidth + gridGap));
+        // Calcular o offset baseado no ponto mais baixo da coluna
+        let calculatedOffset: number;
+        if (isFirstCardInColumn) {
+          calculatedOffset = 0;
+        } else {
+          // O offset é calculado para que o card comece logo após o card anterior, com o gap
+          // O columnBottomPoints contém a posição Y absoluta onde o último card termina
+          // Precisamos calcular a posição Y do topo do último card (columnBottomPoints - altura do último card)
+          // Mas como não temos essa informação, vamos usar columnBottomPoints diretamente
           
-          // Se o turno também está na mesma coluna do sales, não usar absolute
-          // (isso acontece na tela geral)
-          if (turnoColumn === salesColumn) {
-            shouldUseAbsolute = false;
+          // Calcular onde o card anterior termina
+          const previousCardBottom = columnBottomPoints[minColumn];
+          
+          // Calcular onde este card deve começar
+          // Se verticalGap é positivo, o card começa após o anterior + gap
+          // Se verticalGap é negativo, o card pode começar antes do anterior terminar (sobreposição)
+          calculatedOffset = previousCardBottom + verticalGap;
+          
+          // Garantir que não há sobreposição total mesmo com gap negativo
+          // Verificar se este offset resultaria em sobreposição com cards anteriores na mesma coluna
+          const existingCards = columnCardInfo[minColumn];
+          if (existingCards.length > 0) {
+            // Encontrar o offset mínimo que não sobreponha nenhum card anterior
+            // Um card sobrepõe outro se seus intervalos [offset, offset+height] se intersectam
+            let minSafeOffset = calculatedOffset;
+            
+            // Verificar contra todos os cards anteriores na coluna
+            for (let i = 0; i < existingCards.length; i++) {
+              const prevCard = existingCards[i];
+              const prevCardTop = prevCard.offset;
+              const prevCardBottom = prevCard.offset + prevCard.height;
+              const newCardTop = calculatedOffset;
+              const newCardBottom = calculatedOffset + cardHeight;
+              
+              // Há sobreposição se os intervalos se intersectam
+              if (newCardTop < prevCardBottom && newCardBottom > prevCardTop) {
+                // Há sobreposição - ajustar para começar logo após o card anterior
+                minSafeOffset = Math.max(minSafeOffset, prevCardBottom + 0); // Margem mínima (0 = sem espaço extra)
+              }
+            }
+            
+            calculatedOffset = minSafeOffset;
+          }
+          
+          if (calculatedOffset < 0) {
+            // Se o offset seria negativo, garantir pelo menos um pequeno espaço
+            calculatedOffset = 0;
           }
         }
         
-        // Só usar position: absolute se estiverem na mesma coluna, produto abaixo do sales,
-        // e não houver conflito com o card turno
-        if (shouldUseAbsolute) {
-          // Posição relativa do card sales dentro do grid
-          const salesTop = salesRect.top - gridRect.top;
-          const salesLeft = salesRect.left - gridRect.left;
-          const salesHeight = salesRect.height;
-          const salesWidth = salesRect.width;
-          
-          // Posição absoluta do card produto = topo do sales + altura do sales + gap fixo
-          const produtoTop = salesTop + salesHeight + GAP_PIXELS;
-          
-          setProdutoPosition({
-            top: produtoTop,
-            left: salesLeft,
-            width: salesWidth
-          });
+        // Garantir que o offset nunca seja negativo
+        calculatedOffset = Math.max(0, calculatedOffset);
+        offsets[cardType] = calculatedOffset;
+        columns[cardType] = minColumn;
+        
+        // Armazenar este card na lista de cards da coluna (offset + altura)
+        columnCardInfo[minColumn].push({ offset: calculatedOffset, height: cardHeight });
+
+        // Atualizar o ponto mais baixo desta coluna
+        // O ponto mais baixo é onde termina este card (posição top + altura do card)
+        if (isFirstCardInColumn) {
+          // Primeiro card: altura do card
+          columnBottomPoints[minColumn] = cardHeight;
         } else {
-          // Não usar position: absolute
-          setProdutoPosition(null);
+          // Cards subsequentes: posição top + altura do card
+          // A posição top é o offset calculado
+          columnBottomPoints[minColumn] = calculatedOffset + cardHeight;
         }
-      }
+        
+        columnCardCounts[minColumn]++;
+      });
+
+      setCardTopOffsets(offsets);
+      setCardColumns(columns);
     };
 
-    // Calcular após um pequeno delay para garantir que o DOM está renderizado
+    // Calcular após os cards renderizarem completamente e receberem dados
+    // Usar múltiplos requestAnimationFrame para garantir que o layout foi aplicado
+    const timeoutId = setTimeout(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            calculateTopOffsets();
+          });
+        });
+      });
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [visibleCards, refs, sales, revenue, vendasTurno, tendenciaVendas, vendasCanal, produtoMaisVendido, produtoMaisRemovido, ticketMedio, desvioMedia, showRanking, loadingRanking]);
+
+  // Verificar e corrigir posições iniciais dos cards para garantir que não spawnem acima da linha preta
+  useEffect(() => {
+    if (!onPositionChange) return;
+
+    const checkAndFixPositions = () => {
+      const gridContainer = document.querySelector('.grid');
+      if (!gridContainer) return;
+
+      const gridRect = gridContainer.getBoundingClientRect();
+      const lineY = gridRect.top;
+
+      // Verificar cada card visível e ajustar se necessário
+      Object.keys(visibleCards).forEach((cardType) => {
+        if (!visibleCards[cardType as keyof typeof visibleCards]) return;
+
+        const cardRef = refs[cardType as CardType]?.current;
+        if (!cardRef) return;
+
+        const cardRect = cardRef.getBoundingClientRect();
+        const currentPosition = positions[cardType as CardType] || { x: 0, y: 0 };
+        
+        // Calcular a posição base do card (sem transform)
+        const baseTop = cardRect.top - currentPosition.y;
+        const cardTop = baseTop + currentPosition.y;
+
+        // Se o topo do card está acima da linha preta, ajustar
+        if (cardTop < lineY) {
+          // Calcular o ajuste necessário para manter o card abaixo da linha
+          const adjustmentY = lineY - baseTop;
+          const newPosition = {
+            x: currentPosition.x,
+            y: adjustmentY
+          };
+
+          // Atualizar a posição apenas se realmente precisar ajustar
+          if (Math.abs(newPosition.y - currentPosition.y) > 1) {
+            onPositionChange(cardType as CardType, newPosition);
+          }
+        }
+      });
+    };
+
+    // Verificar após um pequeno delay para garantir que o DOM está renderizado
     // Usar requestAnimationFrame para garantir que o layout foi aplicado
     const timeoutId = setTimeout(() => {
       requestAnimationFrame(() => {
-        calculatePosition();
+        checkAndFixPositions();
       });
-    }, 0);
+    }, 50);
 
-    // Observar mudanças de tamanho do card sales, produto e reorganizações do grid
-    const salesCard = refs.sales.current;
-    const produtoCard = refs.produto.current;
-    let resizeObserver: ResizeObserver | null = null;
-    let produtoResizeObserver: ResizeObserver | null = null;
-    let gridResizeObserver: ResizeObserver | null = null;
-    
-    if (salesCard) {
-      const gridContainer = salesCard.closest('.grid');
-      
-      resizeObserver = new ResizeObserver(() => {
-        calculatePosition();
-      });
-      
-      resizeObserver.observe(salesCard);
-      
-      if (produtoCard) {
-        produtoResizeObserver = new ResizeObserver(() => {
-          calculatePosition();
-        });
-        
-        produtoResizeObserver.observe(produtoCard);
-      }
-      
-      if (gridContainer) {
-        gridResizeObserver = new ResizeObserver(() => {
-          calculatePosition();
-        });
-        
-        gridResizeObserver.observe(gridContainer);
-      }
-    }
-
-    return () => {
-      clearTimeout(timeoutId);
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
-      if (produtoResizeObserver) {
-        produtoResizeObserver.disconnect();
-      }
-      if (gridResizeObserver) {
-        gridResizeObserver.disconnect();
-      }
-    };
-  }, [visibleCards.sales, visibleCards.produto, visibleCards.turno, sales, produtoMaisVendido, showRanking, loadingRanking, tendenciaVendas, refs.sales, refs.produto, refs.turno]);
+    return () => clearTimeout(timeoutId);
+  }, [visibleCards, positions, refs, onPositionChange]);
 
   if (!Object.values(visibleCards).some(v => v)) {
     return null;
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-full mt-0 items-start content-start relative">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 w-full mt-0 items-start content-start relative" style={{ gap: '0' }}>
       {visibleCards.sales && (
         <DraggableCard
           ref={refs.sales}
@@ -221,6 +287,10 @@ export default function CardsGrid({
           onMouseDown={(e) => onMouseDown('sales', e)}
           onTouchStart={(e) => onTouchStart('sales', e)}
           onRemove={() => onRemoveCard('sales')}
+          style={{
+            ...(cardTopOffsets.sales !== undefined ? { marginTop: `${cardTopOffsets.sales}px` } : {}),
+            ...(cardColumns.sales !== undefined && cardColumns.sales > 0 ? { marginLeft: `${cardColumns.sales * horizontalGap}px` } : {})
+          }}
         >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
             Vendas
@@ -240,6 +310,10 @@ export default function CardsGrid({
           onMouseDown={(e) => onMouseDown('revenue', e)}
           onTouchStart={(e) => onTouchStart('revenue', e)}
           onRemove={() => onRemoveCard('revenue')}
+          style={{
+            ...(cardTopOffsets.revenue !== undefined ? { marginTop: `${cardTopOffsets.revenue}px` } : {}),
+            ...(cardColumns.revenue !== undefined && cardColumns.revenue > 0 ? { marginLeft: `${cardColumns.revenue * horizontalGap}px` } : {})
+          }}
         >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
             Faturamento
@@ -247,6 +321,75 @@ export default function CardsGrid({
           <div className="text-xl md:text-3xl font-semibold text-[--color-primary]">
             {revenue ? `R$ ${revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'}
           </div>
+        </DraggableCard>
+      )}
+
+      {visibleCards.ticketMedio && (
+        <DraggableCard
+          ref={refs.ticketMedio}
+          type="ticketMedio"
+          position={positions.ticketMedio}
+          isDragging={isDragging === 'ticketMedio'}
+          onMouseDown={(e) => onMouseDown('ticketMedio', e)}
+          onTouchStart={(e) => onTouchStart('ticketMedio', e)}
+          onRemove={() => onRemoveCard('ticketMedio')}
+          style={{
+            ...(cardTopOffsets.ticketMedio !== undefined ? { marginTop: `${cardTopOffsets.ticketMedio}px` } : {}),
+            ...(cardColumns.ticketMedio !== undefined && cardColumns.ticketMedio > 0 ? { marginLeft: `${cardColumns.ticketMedio * horizontalGap}px` } : {})
+          }}
+        >
+          <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
+            Ticket Médio
+          </div>
+          {loadingTicketMedio ? (
+            <div className="text-sm text-zinc-400 text-center py-4">Carregando dados...</div>
+          ) : ticketMedio ? (
+            <div>
+              <div className="text-xl md:text-3xl font-semibold text-[--color-primary] mb-2">
+                R$ {ticketMedio.ticketMedio.toFixed(2).replace('.', ',')}
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                {ticketMedio.variacao !== 0 && (
+                  <>
+                    <span className={ticketMedio.variacao >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {ticketMedio.variacao >= 0 ? '▲' : '▼'}
+                    </span>
+                    <span className={ticketMedio.variacao >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {Math.abs(ticketMedio.variacao).toFixed(1)}% vs período anterior
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-xl md:text-3xl font-semibold text-[--color-primary]">—</div>
+          )}
+        </DraggableCard>
+      )}
+
+      {visibleCards.turno && (
+        <DraggableCard
+          ref={refs.turno}
+          type="turno"
+          position={positions.turno}
+          isDragging={isDragging === 'turno'}
+          onMouseDown={(e) => onMouseDown('turno', e)}
+          onTouchStart={(e) => onTouchStart('turno', e)}
+          onRemove={() => onRemoveCard('turno')}
+          style={{
+            ...(cardTopOffsets.turno !== undefined ? { marginTop: `${cardTopOffsets.turno}px` } : {}),
+            ...(cardColumns.turno !== undefined && cardColumns.turno > 0 ? { marginLeft: `${cardColumns.turno * horizontalGap}px` } : {})
+          }}
+        >
+          {vendasTurno ? (
+            <SalesByShiftChart
+              manha={vendasTurno.manha}
+              tarde={vendasTurno.tarde}
+              noite={vendasTurno.noite}
+            />
+          ) : (
+            <div className="text-sm text-zinc-400 text-center">Carregando vendas por turno...</div>
+          )}
         </DraggableCard>
       )}
 
@@ -259,6 +402,10 @@ export default function CardsGrid({
           onMouseDown={(e) => onMouseDown('tendencia', e)}
           onTouchStart={(e) => onTouchStart('tendencia', e)}
           onRemove={() => onRemoveCard('tendencia')}
+          style={{
+            ...(cardTopOffsets.tendencia !== undefined ? { marginTop: `${cardTopOffsets.tendencia}px` } : {}),
+            ...(cardColumns.tendencia !== undefined && cardColumns.tendencia > 0 ? { marginLeft: `${cardColumns.tendencia * horizontalGap}px` } : {})
+          }}
         >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
             Tendência de Crescimento
@@ -299,6 +446,10 @@ export default function CardsGrid({
           onTouchStart={(e) => onTouchStart('canal', e)}
           onRemove={() => onRemoveCard('canal')}
           className="lg:row-span-3"
+          style={{
+            ...(cardTopOffsets.canal !== undefined ? { marginTop: `${cardTopOffsets.canal}px` } : {}),
+            ...(cardColumns.canal !== undefined && cardColumns.canal > 0 ? { marginLeft: `${cardColumns.canal * horizontalGap}px` } : {})
+          }}
         >
           {vendasCanal.length > 0 ? (
             <VendasPorCanalChart canais={vendasCanal} />
@@ -311,13 +462,6 @@ export default function CardsGrid({
       {visibleCards.produto && (
         <div 
           className={showRanking ? 'relative z-[9999]' : ''}
-          style={produtoPosition !== null && visibleCards.sales ? {
-            position: 'absolute',
-            top: `${produtoPosition.top}px`,
-            left: `${produtoPosition.left}px`,
-            width: `${produtoPosition.width}px`,
-            pointerEvents: 'auto'
-          } : undefined}
         >
           <DraggableCard
             ref={refs.produto}
@@ -327,6 +471,10 @@ export default function CardsGrid({
             onMouseDown={(e) => onMouseDown('produto', e)}
             onTouchStart={(e) => onTouchStart('produto', e)}
             onRemove={() => onRemoveCard('produto')}
+            style={{
+              ...(cardTopOffsets.produto !== undefined ? { marginTop: `${cardTopOffsets.produto}px` } : {}),
+              ...(cardColumns.produto !== undefined && cardColumns.produto > 0 ? { marginLeft: `${cardColumns.produto * horizontalGap}px` } : {})
+            }}
           >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
             Produto Mais Vendido
@@ -389,6 +537,10 @@ export default function CardsGrid({
           onMouseDown={(e) => onMouseDown('produtoRemovido', e)}
           onTouchStart={(e) => onTouchStart('produtoRemovido', e)}
           onRemove={() => onRemoveCard('produtoRemovido')}
+          style={{
+            ...(cardTopOffsets.produtoRemovido !== undefined ? { marginTop: `${cardTopOffsets.produtoRemovido}px` } : {}),
+            ...(cardColumns.produtoRemovido !== undefined && cardColumns.produtoRemovido > 0 ? { marginLeft: `${cardColumns.produtoRemovido * horizontalGap}px` } : {})
+          }}
         >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
             Produto Mais Removido
@@ -412,63 +564,57 @@ export default function CardsGrid({
         </DraggableCard>
       )}
 
-      {visibleCards.turno && (
+      {visibleCards.desvioMedia && (
         <DraggableCard
-          ref={refs.turno}
-          type="turno"
-          position={positions.turno}
-          isDragging={isDragging === 'turno'}
-          onMouseDown={(e) => onMouseDown('turno', e)}
-          onTouchStart={(e) => onTouchStart('turno', e)}
-          onRemove={() => onRemoveCard('turno')}
-        >
-          {vendasTurno ? (
-            <SalesByShiftChart
-              manha={vendasTurno.manha}
-              tarde={vendasTurno.tarde}
-              noite={vendasTurno.noite}
-            />
-          ) : (
-            <div className="text-sm text-zinc-400 text-center">Carregando vendas por turno...</div>
-          )}
-        </DraggableCard>
-      )}
-
-      {visibleCards.ticketMedio && (
-        <DraggableCard
-          ref={refs.ticketMedio}
-          type="ticketMedio"
-          position={positions.ticketMedio}
-          isDragging={isDragging === 'ticketMedio'}
-          onMouseDown={(e) => onMouseDown('ticketMedio', e)}
-          onTouchStart={(e) => onTouchStart('ticketMedio', e)}
-          onRemove={() => onRemoveCard('ticketMedio')}
+          ref={refs.desvioMedia}
+          type="desvioMedia"
+          position={positions.desvioMedia || { x: 0, y: 0 }}
+          isDragging={isDragging === 'desvioMedia'}
+          onMouseDown={(e) => onMouseDown('desvioMedia', e)}
+          onTouchStart={(e) => onTouchStart('desvioMedia', e)}
+          onRemove={() => onRemoveCard('desvioMedia')}
+          style={{
+            ...(cardTopOffsets.desvioMedia !== undefined ? { marginTop: `${cardTopOffsets.desvioMedia}px` } : {}),
+            ...(cardColumns.desvioMedia !== undefined && cardColumns.desvioMedia > 0 ? { marginLeft: `${cardColumns.desvioMedia * horizontalGap}px` } : {})
+          }}
         >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
-            Ticket Médio
+            Desvio da Média Histórica
           </div>
-          {loadingTicketMedio ? (
-            <div className="text-sm text-zinc-400 text-center py-4">Carregando dados...</div>
-          ) : ticketMedio ? (
+          {desvioMedia ? (
             <div>
-              <div className="text-xl md:text-3xl font-semibold text-[--color-primary] mb-2">
-                R$ {ticketMedio.ticketMedio.toFixed(2).replace('.', ',')}
+              <div className="space-y-2 mb-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-[--color-muted-foreground]">Semana atual:</span>
+                  <span className="text-sm font-semibold text-[--color-primary]">
+                    R$ {desvioMedia.semanaAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-[--color-muted-foreground]">Média histórica:</span>
+                  <span className="text-sm font-semibold text-[--color-primary]">
+                    R$ {desvioMedia.mediaHistorica.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                {ticketMedio.variacao !== 0 && (
-                  <>
-                    <span className={ticketMedio.variacao >= 0 ? 'text-green-600' : 'text-red-600'}>
-                      {ticketMedio.variacao >= 0 ? '▲' : '▼'}
-                    </span>
-                    <span className={ticketMedio.variacao >= 0 ? 'text-green-600' : 'text-red-600'}>
-                      {Math.abs(ticketMedio.variacao).toFixed(1)}% vs período anterior
-                    </span>
-                  </>
-                )}
+              <div className="flex items-center gap-2">
+                <span className={`text-lg font-semibold ${
+                  desvioMedia.percentualDesvio >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {desvioMedia.percentualDesvio >= 0 ? '+' : ''}{desvioMedia.percentualDesvio.toFixed(1)}%
+                </span>
+                <span className={`text-xs ${
+                  desvioMedia.percentualDesvio >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {desvioMedia.percentualDesvio >= 0 ? 'acima' : 'abaixo'} da média
+                </span>
+                <span className={desvioMedia.percentualDesvio >= 0 ? 'text-green-600' : 'text-red-600'}>
+                  {desvioMedia.percentualDesvio >= 0 ? '🔺' : '🔻'}
+                </span>
               </div>
             </div>
           ) : (
-            <div className="text-xl md:text-3xl font-semibold text-[--color-primary]">—</div>
+            <div className="text-lg text-zinc-400">—</div>
           )}
         </DraggableCard>
       )}

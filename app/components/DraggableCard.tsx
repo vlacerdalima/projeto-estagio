@@ -13,6 +13,7 @@ interface DraggableCardProps {
   onTouchStart: (e: React.TouchEvent) => void;
   onRemove: () => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const DraggableCard = forwardRef<HTMLDivElement, DraggableCardProps>(({
@@ -23,7 +24,8 @@ const DraggableCard = forwardRef<HTMLDivElement, DraggableCardProps>(({
   onMouseDown,
   onTouchStart,
   onRemove,
-  className = ''
+  className = '',
+  style
 }, ref) => {
   return (
     <Card
@@ -32,7 +34,8 @@ const DraggableCard = forwardRef<HTMLDivElement, DraggableCardProps>(({
       className={`border-[--color-primary]/30 p-4 md:p-6 cursor-move select-none transition-none relative self-start touch-none ${className}`}
       style={{
         transform: `translate(${position?.x || 0}px, ${position?.y || 0}px)`,
-        zIndex: isDragging ? 1000 : 1
+        zIndex: isDragging ? 1000 : 1,
+        ...style
       }}
       onMouseDown={onMouseDown}
       onTouchStart={onTouchStart}

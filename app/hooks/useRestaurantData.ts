@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Period, VendasTurno, TicketMedio, CanalData, ProdutoRanking, ProdutoMaisVendido, ProdutoMaisRemovido, TendenciaVendas } from '@/app/types';
+import type { Period, VendasTurno, TicketMedio, CanalData, ProdutoRanking, ProdutoMaisVendido, ProdutoMaisRemovido, TendenciaVendas, DesvioMedia } from '@/app/types';
 
 interface RestaurantData {
   sales: number | null;
@@ -10,6 +10,7 @@ interface RestaurantData {
   ticketMedio: TicketMedio | null;
   vendasCanal: CanalData[];
   tendenciaVendas: TendenciaVendas | null;
+  desvioMedia: DesvioMedia | null;
 }
 
 export function useRestaurantData(selectedRestaurant: number | null, period: Period, year?: string | number, month?: string | number) {
@@ -21,7 +22,8 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
         vendasTurno: null,
         ticketMedio: null,
         vendasCanal: [],
-        tendenciaVendas: null
+        tendenciaVendas: null,
+        desvioMedia: null
       });
   
   const [loading, setLoading] = useState(false);
@@ -39,7 +41,7 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
           const monthParam = month && month !== 'todos' ? `&month=${month}` : '';
           const params = `period=${period}${yearParam}${monthParam}`;
           
-          const [salesRes, revenueRes, produtoRes, produtoRemovidoRes, turnoRes, ticketMedioRes, canalRes, tendenciaRes] = await Promise.all([
+          const [salesRes, revenueRes, produtoRes, produtoRemovidoRes, turnoRes, ticketMedioRes, canalRes, tendenciaRes, desvioMediaRes] = await Promise.all([
             fetch(`/api/restaurante/${selectedRestaurant}/vendas?${params}`),
             fetch(`/api/restaurante/${selectedRestaurant}/faturamento?${params}`),
             fetch(`/api/restaurante/${selectedRestaurant}/produto-mais-vendido?${params}`),
@@ -47,7 +49,8 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
             fetch(`/api/restaurante/${selectedRestaurant}/vendas-por-turno?${params}`),
             fetch(`/api/restaurante/${selectedRestaurant}/ticket-medio?${params}`),
             fetch(`/api/restaurante/${selectedRestaurant}/vendas-por-canal?${params}`),
-            fetch(`/api/restaurante/${selectedRestaurant}/tendencia-vendas?${params}`)
+            fetch(`/api/restaurante/${selectedRestaurant}/tendencia-vendas`), // Sem parâmetros - sempre últimos 12 meses
+            fetch(`/api/restaurante/${selectedRestaurant}/desvio-media`)
           ]);
           
           const salesData = await salesRes.json();
@@ -58,6 +61,7 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
           const ticketMedioData = await ticketMedioRes.json();
           const canalData = await canalRes.json();
           const tendenciaData = await tendenciaRes.json();
+          const desvioMediaData = await desvioMediaRes.json();
           
           setData({
             sales: salesData.total,
@@ -73,6 +77,11 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
             tendenciaVendas: {
               taxaCrescimento: tendenciaData.taxaCrescimento || 0,
               dadosMensais: tendenciaData.dadosMensais || []
+            },
+            desvioMedia: {
+              semanaAtual: desvioMediaData.semanaAtual || 0,
+              mediaHistorica: desvioMediaData.mediaHistorica || 0,
+              percentualDesvio: desvioMediaData.percentualDesvio || 0
             }
           });
           setLoading(false);

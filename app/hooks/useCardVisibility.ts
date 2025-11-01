@@ -10,7 +10,8 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
     ticketMedio: false,
     canal: false,
     produtoRemovido: false,
-    tendencia: false
+    tendencia: false,
+    desvioMedia: false
   });
   
   const [currentTemplate, setCurrentTemplate] = useState<TemplateType>('geral');
@@ -28,7 +29,8 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
         ticketMedio: true,
         canal: true,
         produtoRemovido: false,
-        tendencia: false
+        tendencia: false,
+        desvioMedia: false
       });
       cardsInitializedRef.current = true;
     }
@@ -54,7 +56,8 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
           ticketMedio: true,
           canal: true,
           produtoRemovido: false,
-          tendencia: false
+          tendencia: false,
+          desvioMedia: false
         });
         break;
       case 'vendas':
@@ -66,7 +69,8 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
           ticketMedio: false,
           canal: true,
           produtoRemovido: false,
-          tendencia: true
+          tendencia: true,
+          desvioMedia: true
         });
         break;
       case 'faturamento':
@@ -78,19 +82,21 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
           ticketMedio: true,
           canal: false,
           produtoRemovido: false,
-          tendencia: false
+          tendencia: false,
+          desvioMedia: false
         });
         break;
       case 'produtos':
         setVisibleCards({
           sales: false,
           revenue: false,
-          produto: false,
+          produto: true,
           turno: false,
           ticketMedio: false,
           canal: false,
           produtoRemovido: true,
-          tendencia: false
+          tendencia: false,
+          desvioMedia: false
         });
         break;
     }
@@ -105,7 +111,8 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
       ticketMedio: false,
       canal: false,
       produtoRemovido: false,
-      tendencia: false
+      tendencia: false,
+      desvioMedia: false
     });
   };
 

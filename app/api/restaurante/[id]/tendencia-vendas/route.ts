@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { buildDateFilter } from '@/lib/dateFilter';
 
 export async function GET(
   request: Request,
@@ -8,71 +7,22 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const period = searchParams.get('period') || 'anual';
-    const year = searchParams.get('year');
-    const month = searchParams.get('month');
     
-    // Buscar vendas mensais dos últimos 12 meses (ou período disponível)
-    // Se não houver filtro específico, busca últimos 12 meses
-    // Se houver filtro de ano/mês, busca os meses do ano selecionado
+    // Sempre buscar os últimos 12 meses da vida real, independente do período selecionado
+    // O card de tendência deve mostrar sempre o histórico real, não filtrar por período
+    const query = `
+      SELECT 
+        EXTRACT(YEAR FROM created_at)::integer as ano,
+        EXTRACT(MONTH FROM created_at)::integer as mes,
+        COUNT(*)::integer as vendas
+      FROM sales
+      WHERE store_id = $1 
+      AND created_at >= NOW() - INTERVAL '12 months'
+      GROUP BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
+      ORDER BY ano ASC, mes ASC
+    `;
     
-    let query = '';
-    let queryParams: any[] = [];
-    
-    if (year && year !== 'todos' && month && month !== 'todos') {
-      // Filtro específico: apenas o mês/ano selecionado
-      const startDate = new Date(parseInt(year as string), parseInt(month as string) - 1, 1);
-      const endDate = new Date(parseInt(year as string), parseInt(month as string), 0, 23, 59, 59);
-      
-      query = `
-        SELECT 
-          EXTRACT(YEAR FROM created_at)::integer as ano,
-          EXTRACT(MONTH FROM created_at)::integer as mes,
-          COUNT(*)::integer as vendas
-        FROM sales
-        WHERE store_id = $1 
-        AND created_at >= $2 
-        AND created_at <= $3
-        GROUP BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
-        ORDER BY ano ASC, mes ASC
-      `;
-      queryParams = [id, startDate, endDate];
-    } else if (year && year !== 'todos') {
-      // Filtro por ano: busca todos os meses do ano
-      const startDate = new Date(parseInt(year as string), 0, 1);
-      const endDate = new Date(parseInt(year as string), 11, 31, 23, 59, 59);
-      
-      query = `
-        SELECT 
-          EXTRACT(YEAR FROM created_at)::integer as ano,
-          EXTRACT(MONTH FROM created_at)::integer as mes,
-          COUNT(*)::integer as vendas
-        FROM sales
-        WHERE store_id = $1 
-        AND created_at >= $2 
-        AND created_at <= $3
-        GROUP BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
-        ORDER BY ano ASC, mes ASC
-      `;
-      queryParams = [id, startDate, endDate];
-    } else {
-      // Sem filtro específico: busca últimos 12 meses
-      query = `
-        SELECT 
-          EXTRACT(YEAR FROM created_at)::integer as ano,
-          EXTRACT(MONTH FROM created_at)::integer as mes,
-          COUNT(*)::integer as vendas
-        FROM sales
-        WHERE store_id = $1 
-        AND created_at >= NOW() - INTERVAL '12 months'
-        GROUP BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
-        ORDER BY ano ASC, mes ASC
-      `;
-      queryParams = [id];
-    }
-    
-    const result = await pool.query(query, queryParams);
+    const result = await pool.query(query, [id]);
     
     const dadosMensais = result.rows.map((row: any) => ({
       mes: row.mes,

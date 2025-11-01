@@ -9,6 +9,7 @@ interface DraggableCardProps {
   isDragging: boolean;
   onMouseDown: (e: React.MouseEvent) => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 /**
@@ -26,14 +27,16 @@ export function DraggableCard({
   position, 
   isDragging, 
   onMouseDown, 
-  className 
+  className,
+  style
 }: DraggableCardProps) {
   return (
     <Card
       className={`flex-1 border-[--color-primary]/30 p-6 cursor-move select-none transition-none ${className || ''}`}
       style={{
         transform: `translate(${position.x}px, ${position.y}px)`,
-        zIndex: isDragging ? 1000 : 1
+        zIndex: isDragging ? 1000 : 1,
+        ...style
       }}
       onMouseDown={onMouseDown}
     >

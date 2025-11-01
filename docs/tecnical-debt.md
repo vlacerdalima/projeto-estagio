@@ -234,3 +234,25 @@ Quando a otimização for priorizada, recomenda-se:
 
 ---
 
+## Dívida Técnica - Spawn dos Cards na Tela de Vendas
+
+### Problema Identificado
+
+Na tela de "vendas", os cards podem apresentar um posicionamento subótimo quando o card "Tendência de Crescimento" expande após carregar o gráfico, empurrando outros cards (como "Produto Mais Vendido") de forma incorreta.
+
+### Decisão: Prorrogação da Correção
+
+**Decisão consciente de prorrogar a correção** pelos seguintes motivos:
+
+1. **Não é Urgente**: O problema não quebra nenhuma funcionalidade, é apenas um detalhe estético
+2. **Impacto Limitado**: A funcionalidade continua operacional e utilizável
+3. **Prioridades do Projeto**: Existem outras tarefas mais críticas no momento
+
+### Status Atual
+
+- ✅ **Problema Identificado**
+- ✅ **Decisão de Prorrogação Registrada**
+- ⏸️ **Correção Prorrogada Indefinidamente**
+
+---
+
