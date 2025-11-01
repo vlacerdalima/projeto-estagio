@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DraggableCard from './DraggableCard';
 import SalesByShiftChart from "@/components/SalesByShiftChart";
 import VendasPorCanalChart from "@/components/VendasPorCanalChart";
@@ -10,6 +10,7 @@ import type {
   CardType, 
   Position, 
   Period,
+  TemplateType,
   VendasTurno,
   CanalData,
   TicketMedio,
@@ -17,7 +18,8 @@ import type {
   ProdutoMaisRemovido,
   ProdutoRanking,
   TendenciaVendas,
-  DesvioMedia
+  DesvioMedia,
+  TempoMedioEntrega
 } from '@/app/types';
 
 interface CardsGridProps {
@@ -25,6 +27,7 @@ interface CardsGridProps {
   positions: Record<CardType, Position>;
   isDragging: CardType | null;
   period: Period;
+  currentTemplate: TemplateType;
   sales: number | null;
   revenue: number | null;
   produtoMaisVendido: ProdutoMaisVendido | null;
@@ -34,6 +37,7 @@ interface CardsGridProps {
   vendasCanal: CanalData[];
   tendenciaVendas: TendenciaVendas | null;
   desvioMedia: DesvioMedia | null;
+  tempoMedioEntrega: TempoMedioEntrega | null;
   loadingTicketMedio: boolean;
   showRanking: boolean;
   produtosRanking: ProdutoRanking[];
@@ -52,6 +56,7 @@ export default function CardsGrid({
   positions,
   isDragging,
   period,
+  currentTemplate,
   sales,
   revenue,
   produtoMaisVendido,
@@ -61,6 +66,7 @@ export default function CardsGrid({
   vendasCanal,
   tendenciaVendas,
   desvioMedia,
+  tempoMedioEntrega,
   loadingTicketMedio,
   showRanking,
   produtosRanking,
@@ -73,211 +79,87 @@ export default function CardsGrid({
   refs,
   onPositionChange
 }: CardsGridProps) {
-  // Estado para armazenar os offsets de top calculados para cada card
-  const [cardTopOffsets, setCardTopOffsets] = useState<Record<CardType, number>>({} as Record<CardType, number>);
-  // Estado para armazenar qual coluna cada card está (para aplicar gap horizontal)
-  const [cardColumns, setCardColumns] = useState<Record<CardType, number>>({} as Record<CardType, number>);
+  // Estados para calcular posições iniciais dos cards
+  const [cardStyles, setCardStyles] = useState<Record<CardType, React.CSSProperties>>({} as Record<CardType, React.CSSProperties>);
+  const hasCalculatedInitialStyles = useRef(false);
 
-  // Constantes de espaçamento (definidas aqui para reutilização)
-  const verticalGap = -500; // Espaçamento vertical entre cards (pixels) - valores mais negativos = menos espaço
-  const horizontalGap = 12; // Espaçamento horizontal entre colunas (pixels)
-
-  // Calcular posicionamento simples: colocar cada card no ponto mais baixo
+  // Calcular posições iniciais baseadas no grid (apenas uma vez)
   useEffect(() => {
-    const calculateTopOffsets = () => {
-      // Determinar número de colunas baseado no breakpoint
-      const isDesktop = window.innerWidth >= 1024;
-      const isTablet = window.innerWidth >= 768;
-      const numColumns = isDesktop ? 3 : (isTablet ? 2 : 1);
-
-      // Array para rastrear a altura do ponto mais baixo de cada coluna (em pixels)
-      // Representa onde o último card nesta coluna TERMINA (offset do card + altura do card)
-      const columnBottomPoints: number[] = new Array(numColumns).fill(0);
-      // Array para rastrear quantos cards já foram colocados em cada coluna
-      const columnCardCounts: number[] = new Array(numColumns).fill(0);
-      // Rastrear os offsets e alturas de cada card na coluna (para evitar sobreposição)
-      const columnCardInfo: Array<Array<{ offset: number; height: number }>> = new Array(numColumns).fill(null).map(() => []);
-      const offsets: Record<CardType, number> = {} as Record<CardType, number>;
-      const columns: Record<CardType, number> = {} as Record<CardType, number>;
-
-      // Ordem de renderização dos cards (baseada na ordem do código)
-      const cardOrder: CardType[] = ['sales', 'revenue', 'ticketMedio', 'turno', 'tendencia', 'canal', 'produto', 'produtoRemovido', 'desvioMedia'];
-
-      // Processar cada card na ordem
-      cardOrder.forEach((cardType) => {
-        if (!visibleCards[cardType]) return;
-
-        const cardRef = refs[cardType]?.current;
-        if (!cardRef) return;
-
-        // Calcular a altura real do card (sem marginTop aplicado ainda)
-        const cardRect = cardRef.getBoundingClientRect();
-        const cardHeight = cardRect.height;
-
-        // Encontrar a coluna com o ponto mais baixo (menor altura acumulada)
-        let minBottom = columnBottomPoints[0];
-        let minColumn = 0;
-        for (let i = 1; i < numColumns; i++) {
-          if (columnBottomPoints[i] < minBottom) {
-            minBottom = columnBottomPoints[i];
-            minColumn = i;
-          }
-        }
-
-        // Se é o primeiro card nesta coluna, offset é 0
-        // Senão, offset é o ponto mais baixo da coluna + gap vertical (onde termina o card anterior + espaçamento)
-        const isFirstCardInColumn = columnCardCounts[minColumn] === 0;
-        
-        // Calcular o offset baseado no ponto mais baixo da coluna
-        let calculatedOffset: number;
-        if (isFirstCardInColumn) {
-          calculatedOffset = 0;
-        } else {
-          // O offset é calculado para que o card comece logo após o card anterior, com o gap
-          // O columnBottomPoints contém a posição Y absoluta onde o último card termina
-          // Precisamos calcular a posição Y do topo do último card (columnBottomPoints - altura do último card)
-          // Mas como não temos essa informação, vamos usar columnBottomPoints diretamente
-          
-          // Calcular onde o card anterior termina
-          const previousCardBottom = columnBottomPoints[minColumn];
-          
-          // Calcular onde este card deve começar
-          // Se verticalGap é positivo, o card começa após o anterior + gap
-          // Se verticalGap é negativo, o card pode começar antes do anterior terminar (sobreposição)
-          calculatedOffset = previousCardBottom + verticalGap;
-          
-          // Garantir que não há sobreposição total mesmo com gap negativo
-          // Verificar se este offset resultaria em sobreposição com cards anteriores na mesma coluna
-          const existingCards = columnCardInfo[minColumn];
-          if (existingCards.length > 0) {
-            // Encontrar o offset mínimo que não sobreponha nenhum card anterior
-            // Um card sobrepõe outro se seus intervalos [offset, offset+height] se intersectam
-            let minSafeOffset = calculatedOffset;
-            
-            // Verificar contra todos os cards anteriores na coluna
-            for (let i = 0; i < existingCards.length; i++) {
-              const prevCard = existingCards[i];
-              const prevCardTop = prevCard.offset;
-              const prevCardBottom = prevCard.offset + prevCard.height;
-              const newCardTop = calculatedOffset;
-              const newCardBottom = calculatedOffset + cardHeight;
-              
-              // Há sobreposição se os intervalos se intersectam
-              if (newCardTop < prevCardBottom && newCardBottom > prevCardTop) {
-                // Há sobreposição - ajustar para começar logo após o card anterior
-                minSafeOffset = Math.max(minSafeOffset, prevCardBottom + 0); // Margem mínima (0 = sem espaço extra)
-              }
-            }
-            
-            calculatedOffset = minSafeOffset;
-          }
-          
-          if (calculatedOffset < 0) {
-            // Se o offset seria negativo, garantir pelo menos um pequeno espaço
-            calculatedOffset = 0;
-          }
-        }
-        
-        // Garantir que o offset nunca seja negativo
-        calculatedOffset = Math.max(0, calculatedOffset);
-        offsets[cardType] = calculatedOffset;
-        columns[cardType] = minColumn;
-        
-        // Armazenar este card na lista de cards da coluna (offset + altura)
-        columnCardInfo[minColumn].push({ offset: calculatedOffset, height: cardHeight });
-
-        // Atualizar o ponto mais baixo desta coluna
-        // O ponto mais baixo é onde termina este card (posição top + altura do card)
-        if (isFirstCardInColumn) {
-          // Primeiro card: altura do card
-          columnBottomPoints[minColumn] = cardHeight;
-        } else {
-          // Cards subsequentes: posição top + altura do card
-          // A posição top é o offset calculado
-          columnBottomPoints[minColumn] = calculatedOffset + cardHeight;
-        }
-        
-        columnCardCounts[minColumn]++;
-      });
-
-      setCardTopOffsets(offsets);
-      setCardColumns(columns);
-    };
-
-    // Calcular após os cards renderizarem completamente e receberem dados
-    // Usar múltiplos requestAnimationFrame para garantir que o layout foi aplicado
-    const timeoutId = setTimeout(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            calculateTopOffsets();
-          });
-        });
-      });
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [visibleCards, refs, sales, revenue, vendasTurno, tendenciaVendas, vendasCanal, produtoMaisVendido, produtoMaisRemovido, ticketMedio, desvioMedia, showRanking, loadingRanking]);
-
-  // Verificar e corrigir posições iniciais dos cards para garantir que não spawnem acima da linha preta
-  useEffect(() => {
-    if (!onPositionChange) return;
-
-    const checkAndFixPositions = () => {
+    if (hasCalculatedInitialStyles.current) return;
+    const calculateStyles = () => {
       const gridContainer = document.querySelector('.grid');
       if (!gridContainer) return;
 
-      const gridRect = gridContainer.getBoundingClientRect();
-      const lineY = gridRect.top;
+      const containerWidth = gridContainer.getBoundingClientRect().width;
+      const isDesktop = window.innerWidth >= 1024;
+      const isTablet = window.innerWidth >= 768;
+      const numColumns = isDesktop ? 3 : (isTablet ? 2 : 1);
+      const gap = 16;
+      const columnWidth = (containerWidth - (gap * (numColumns - 1))) / numColumns;
 
-      // Verificar cada card visível e ajustar se necessário
-      Object.keys(visibleCards).forEach((cardType) => {
-        if (!visibleCards[cardType as keyof typeof visibleCards]) return;
-
+      const styles: Record<CardType, React.CSSProperties> = {} as Record<CardType, React.CSSProperties>;
+      
+      // Ordem base dos cards
+      const allCardsOrder = ['sales', 'revenue', 'ticketMedio', 'turno', 'tendencia', 'canal', 'produto', 'produtoRemovido', 'desvioMedia', 'tempoMedioEntrega'];
+      
+      // Filtrar apenas cards visíveis na ordem original
+      const visibleCardsInOrder = allCardsOrder.filter(cardType => visibleCards[cardType as CardType]);
+      
+      // Array para rastrear altura acumulada de cada coluna
+      const columnHeights: number[] = new Array(numColumns).fill(0);
+      const verticalGap = 8;
+      
+      visibleCardsInOrder.forEach((cardType) => {
         const cardRef = refs[cardType as CardType]?.current;
         if (!cardRef) return;
-
-        const cardRect = cardRef.getBoundingClientRect();
-        const currentPosition = positions[cardType as CardType] || { x: 0, y: 0 };
         
-        // Calcular a posição base do card (sem transform)
-        const baseTop = cardRect.top - currentPosition.y;
-        const cardTop = baseTop + currentPosition.y;
-
-        // Se o topo do card está acima da linha preta, ajustar
-        if (cardTop < lineY) {
-          // Calcular o ajuste necessário para manter o card abaixo da linha
-          const adjustmentY = lineY - baseTop;
-          const newPosition = {
-            x: currentPosition.x,
-            y: adjustmentY
-          };
-
-          // Atualizar a posição apenas se realmente precisar ajustar
-          if (Math.abs(newPosition.y - currentPosition.y) > 1) {
-            onPositionChange(cardType as CardType, newPosition);
+        // Calcular altura real do card
+        const cardHeight = cardRef.getBoundingClientRect().height;
+        
+        // Encontrar a coluna com menor altura
+        let minHeight = columnHeights[0];
+        let targetColumn = 0;
+        for (let i = 1; i < numColumns; i++) {
+          if (columnHeights[i] < minHeight) {
+            minHeight = columnHeights[i];
+            targetColumn = i;
           }
         }
+        
+        const left = targetColumn * (columnWidth + gap);
+        const top = columnHeights[targetColumn];
+
+        styles[cardType as CardType] = {
+          left: `${left}px`,
+          top: `${top}px`,
+          width: `${columnWidth}px`
+        };
+        
+        // Atualizar altura acumulada da coluna
+        columnHeights[targetColumn] += cardHeight + verticalGap;
       });
+
+      setCardStyles(styles);
+      hasCalculatedInitialStyles.current = true;
     };
 
-    // Verificar após um pequeno delay para garantir que o DOM está renderizado
-    // Usar requestAnimationFrame para garantir que o layout foi aplicado
     const timeoutId = setTimeout(() => {
       requestAnimationFrame(() => {
-        checkAndFixPositions();
+        requestAnimationFrame(() => {
+          calculateStyles();
+        });
       });
-    }, 50);
+    }, 100);
 
     return () => clearTimeout(timeoutId);
-  }, [visibleCards, positions, refs, onPositionChange]);
+  }, [visibleCards, currentTemplate]);
 
   if (!Object.values(visibleCards).some(v => v)) {
     return null;
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 w-full mt-0 items-start content-start relative" style={{ gap: '0' }}>
+    <div className="w-full mt-0 relative grid">
       {visibleCards.sales && (
         <DraggableCard
           ref={refs.sales}
@@ -287,10 +169,7 @@ export default function CardsGrid({
           onMouseDown={(e) => onMouseDown('sales', e)}
           onTouchStart={(e) => onTouchStart('sales', e)}
           onRemove={() => onRemoveCard('sales')}
-          style={{
-            ...(cardTopOffsets.sales !== undefined ? { marginTop: `${cardTopOffsets.sales}px` } : {}),
-            ...(cardColumns.sales !== undefined && cardColumns.sales > 0 ? { marginLeft: `${cardColumns.sales * horizontalGap}px` } : {})
-          }}
+          style={cardStyles.sales}
         >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
             Vendas
@@ -310,10 +189,7 @@ export default function CardsGrid({
           onMouseDown={(e) => onMouseDown('revenue', e)}
           onTouchStart={(e) => onTouchStart('revenue', e)}
           onRemove={() => onRemoveCard('revenue')}
-          style={{
-            ...(cardTopOffsets.revenue !== undefined ? { marginTop: `${cardTopOffsets.revenue}px` } : {}),
-            ...(cardColumns.revenue !== undefined && cardColumns.revenue > 0 ? { marginLeft: `${cardColumns.revenue * horizontalGap}px` } : {})
-          }}
+          style={cardStyles.revenue}
         >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
             Faturamento
@@ -333,10 +209,7 @@ export default function CardsGrid({
           onMouseDown={(e) => onMouseDown('ticketMedio', e)}
           onTouchStart={(e) => onTouchStart('ticketMedio', e)}
           onRemove={() => onRemoveCard('ticketMedio')}
-          style={{
-            ...(cardTopOffsets.ticketMedio !== undefined ? { marginTop: `${cardTopOffsets.ticketMedio}px` } : {}),
-            ...(cardColumns.ticketMedio !== undefined && cardColumns.ticketMedio > 0 ? { marginLeft: `${cardColumns.ticketMedio * horizontalGap}px` } : {})
-          }}
+          style={cardStyles.ticketMedio}
         >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
             Ticket Médio
@@ -376,10 +249,7 @@ export default function CardsGrid({
           onMouseDown={(e) => onMouseDown('turno', e)}
           onTouchStart={(e) => onTouchStart('turno', e)}
           onRemove={() => onRemoveCard('turno')}
-          style={{
-            ...(cardTopOffsets.turno !== undefined ? { marginTop: `${cardTopOffsets.turno}px` } : {}),
-            ...(cardColumns.turno !== undefined && cardColumns.turno > 0 ? { marginLeft: `${cardColumns.turno * horizontalGap}px` } : {})
-          }}
+          style={cardStyles.turno}
         >
           {vendasTurno ? (
             <SalesByShiftChart
@@ -402,10 +272,7 @@ export default function CardsGrid({
           onMouseDown={(e) => onMouseDown('tendencia', e)}
           onTouchStart={(e) => onTouchStart('tendencia', e)}
           onRemove={() => onRemoveCard('tendencia')}
-          style={{
-            ...(cardTopOffsets.tendencia !== undefined ? { marginTop: `${cardTopOffsets.tendencia}px` } : {}),
-            ...(cardColumns.tendencia !== undefined && cardColumns.tendencia > 0 ? { marginLeft: `${cardColumns.tendencia * horizontalGap}px` } : {})
-          }}
+          style={cardStyles.tendencia}
         >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
             Tendência de Crescimento
@@ -446,10 +313,7 @@ export default function CardsGrid({
           onTouchStart={(e) => onTouchStart('canal', e)}
           onRemove={() => onRemoveCard('canal')}
           className="lg:row-span-3"
-          style={{
-            ...(cardTopOffsets.canal !== undefined ? { marginTop: `${cardTopOffsets.canal}px` } : {}),
-            ...(cardColumns.canal !== undefined && cardColumns.canal > 0 ? { marginLeft: `${cardColumns.canal * horizontalGap}px` } : {})
-          }}
+          style={cardStyles.canal}
         >
           {vendasCanal.length > 0 ? (
             <VendasPorCanalChart canais={vendasCanal} />
@@ -471,10 +335,7 @@ export default function CardsGrid({
             onMouseDown={(e) => onMouseDown('produto', e)}
             onTouchStart={(e) => onTouchStart('produto', e)}
             onRemove={() => onRemoveCard('produto')}
-            style={{
-              ...(cardTopOffsets.produto !== undefined ? { marginTop: `${cardTopOffsets.produto}px` } : {}),
-              ...(cardColumns.produto !== undefined && cardColumns.produto > 0 ? { marginLeft: `${cardColumns.produto * horizontalGap}px` } : {})
-            }}
+            style={cardStyles.produto}
           >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
             Produto Mais Vendido
@@ -537,10 +398,7 @@ export default function CardsGrid({
           onMouseDown={(e) => onMouseDown('produtoRemovido', e)}
           onTouchStart={(e) => onTouchStart('produtoRemovido', e)}
           onRemove={() => onRemoveCard('produtoRemovido')}
-          style={{
-            ...(cardTopOffsets.produtoRemovido !== undefined ? { marginTop: `${cardTopOffsets.produtoRemovido}px` } : {}),
-            ...(cardColumns.produtoRemovido !== undefined && cardColumns.produtoRemovido > 0 ? { marginLeft: `${cardColumns.produtoRemovido * horizontalGap}px` } : {})
-          }}
+          style={cardStyles.produtoRemovido}
         >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
             Produto Mais Removido
@@ -573,10 +431,7 @@ export default function CardsGrid({
           onMouseDown={(e) => onMouseDown('desvioMedia', e)}
           onTouchStart={(e) => onTouchStart('desvioMedia', e)}
           onRemove={() => onRemoveCard('desvioMedia')}
-          style={{
-            ...(cardTopOffsets.desvioMedia !== undefined ? { marginTop: `${cardTopOffsets.desvioMedia}px` } : {}),
-            ...(cardColumns.desvioMedia !== undefined && cardColumns.desvioMedia > 0 ? { marginLeft: `${cardColumns.desvioMedia * horizontalGap}px` } : {})
-          }}
+          style={cardStyles.desvioMedia}
         >
           <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
             Desvio da Média Histórica
@@ -615,6 +470,44 @@ export default function CardsGrid({
             </div>
           ) : (
             <div className="text-lg text-zinc-400">—</div>
+          )}
+        </DraggableCard>
+      )}
+
+      {visibleCards.tempoMedioEntrega && (
+        <DraggableCard
+          ref={refs.tempoMedioEntrega}
+          type="tempoMedioEntrega"
+          position={positions.tempoMedioEntrega || { x: 0, y: 0 }}
+          isDragging={isDragging === 'tempoMedioEntrega'}
+          onMouseDown={(e) => onMouseDown('tempoMedioEntrega', e)}
+          onTouchStart={(e) => onTouchStart('tempoMedioEntrega', e)}
+          onRemove={() => onRemoveCard('tempoMedioEntrega')}
+          style={cardStyles.tempoMedioEntrega}
+        >
+          <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
+            Tempo Médio de Entrega
+          </div>
+          {tempoMedioEntrega ? (
+            <div>
+              <div className="text-xl md:text-3xl font-semibold text-[--color-primary] mb-2">
+                {tempoMedioEntrega.tempoMedio.toFixed(0)} min
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                {tempoMedioEntrega.variacao !== 0 && (
+                  <>
+                    <span className={tempoMedioEntrega.variacao >= 0 ? 'text-red-600' : 'text-green-600'}>
+                      {tempoMedioEntrega.variacao >= 0 ? '▲' : '▼'}
+                    </span>
+                    <span className={tempoMedioEntrega.variacao >= 0 ? 'text-red-600' : 'text-green-600'}>
+                      {Math.abs(tempoMedioEntrega.variacao).toFixed(1)}% vs período anterior
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-xl md:text-3xl font-semibold text-[--color-primary]">—</div>
           )}
         </DraggableCard>
       )}

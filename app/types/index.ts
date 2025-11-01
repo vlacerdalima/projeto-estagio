@@ -28,7 +28,7 @@ export interface CanalData {
   percentual: number;
 }
 
-export type CardType = 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal' | 'produtoRemovido' | 'tendencia' | 'desvioMedia';
+export type CardType = 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal' | 'produtoRemovido' | 'tendencia' | 'desvioMedia' | 'tempoMedioEntrega';
 
 export type TemplateType = 'geral' | 'vendas' | 'faturamento' | 'produtos';
 
@@ -42,6 +42,7 @@ export interface VisibleCards {
   produtoRemovido: boolean;
   tendencia: boolean;
   desvioMedia: boolean;
+  tempoMedioEntrega: boolean;
 }
 
 export interface ProdutoMaisVendido {
@@ -67,5 +68,10 @@ export interface DesvioMedia {
   semanaAtual: number; // receita da semana atual (últimos 7 dias)
   mediaHistorica: number; // média histórica de receita semanal
   percentualDesvio: number; // percentual de desvio (positivo = acima, negativo = abaixo)
+}
+
+export interface TempoMedioEntrega {
+  tempoMedio: number; // tempo médio em minutos
+  variacao: number; // variação percentual comparado ao período anterior
 }
 

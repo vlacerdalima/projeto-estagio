@@ -58,6 +58,7 @@ export function useCardDrag({ positions, refs, onPositionChange }: UseCardDragPr
         const gridRect = gridContainer.getBoundingClientRect();
         const lineY = gridRect.top;
         
+        // Com transform, a posição base é a posição do elemento sem transform
         const baseTop = cardRect.top - position.y;
         const baseLeft = cardRect.left - position.x;
         const baseBottom = baseTop + cardHeight;

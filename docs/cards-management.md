@@ -29,17 +29,24 @@ Sistema implementado para permitir que o usuário gerencie os cards visualizados
 ### ESTADOS DE VISIBILIDADE
 ```typescript
 const [visibleCards, setVisibleCards] = useState({
-  sales: true,      // Card de Vendas
-  revenue: true,    // Card de Faturamento
-  produto: true,    // Card de Produto Mais Vendido
-  turno: true       // Card de Vendas por Turno
+  sales: true,                // Card de Vendas
+  revenue: true,              // Card de Faturamento
+  produto: true,              // Card de Produto Mais Vendido
+  turno: true,                // Card de Vendas por Turno
+  ticketMedio: true,          // Card de Ticket Médio
+  canal: true,                // Card de Vendas por Canal
+  produtoRemovido: false,     // Card de Produto Mais Removido
+  tendencia: false,           // Card de Tendência de Crescimento
+  desvioMedia: false,         // Card de Desvio da Média Histórica
+  tempoMedioEntrega: false    // Card de Tempo Médio de Entrega
 });
 ```
 
 **Como funciona:**
-- Cada propriedade (`sales`, `revenue`, `produto`, `turno`) controla a visibilidade de um card
+- Cada propriedade controla a visibilidade de um card
 - `true` = card visível na tela
 - `false` = card oculto (pode ser adicionado via dropdown)
+- Template "geral" inicia com 6 cards visíveis por padrão
 
 ### ESTADO DO DROPDOWN
 ```typescript
@@ -141,13 +148,13 @@ const handleMouseDown = (type, e: React.MouseEvent) => {
 
 ### MENSAGEM "TODOS VISÍVEIS"
 ```tsx
-{(visibleCards.sales && visibleCards.revenue && visibleCards.produto && visibleCards.turno) && (
+{Object.values(visibleCards).every(v => v) && (
   <div>Todos os cards estão visíveis</div>
 )}
 ```
 
 **Quando aparece:**
-- Todos os 4 cards estão sendo exibidos
+- Todos os 10 cards estão sendo exibidos
 - Não há cards disponíveis para adicionar
 - Mostra mensagem informativa ao usuário
 
@@ -172,15 +179,23 @@ const handleMouseDown = (type, e: React.MouseEvent) => {
 
 ## ESTADO INICIAL
 
-Todos os 4 cards começam **visíveis** por padrão:
+O template "geral" começa com **6 cards visíveis** por padrão:
 ```typescript
 const [visibleCards, setVisibleCards] = useState({
   sales: true,
   revenue: true,
   produto: true,
-  turno: true
+  turno: true,
+  ticketMedio: true,
+  canal: true,
+  produtoRemovido: false,
+  tendencia: false,
+  desvioMedia: false,
+  tempoMedioEntrega: false
 });
 ```
+
+Os templates específicos ativam diferentes combinações de cards conforme a necessidade analítica.
 
 ---
 
@@ -229,15 +244,15 @@ restaurante [dropdown]  [cards button]  período [anual | mensal]
 
 ### CASO 1: Usuário remove apenas 1 card
 - Dropdown mostra 1 opção
-- Total de 3 cards visíveis + 1 disponível
+- Outros cards mantêm suas posições (não se movem)
 
 ### CASO 2: Usuário remove todos os cards
-- Dropdown mostra 4 opções
+- Dropdown mostra todas as 10 opções disponíveis
 - Botão "cards" fica com todas as opções
 - Mensagem desaparece pois há cards disponíveis
 
 ### CASO 3: Usuário remove e re-adiciona um card
-- Card volta para a posição original no grid
+- Card aparece novamente na sua posição original
 - Mantém os dados já carregados
 - Não precisa buscar dados novamente das APIs
 
@@ -345,22 +360,189 @@ if (newCardLeft < 0) {
 - Mapeia IDs de canal (channel_id) para nomes legíveis
 - Suporta JOIN com tabela `channels` ou fallback para IDs
 
-### 11. CARDS DISPONÍVEIS
-Total de 6 cards no sistema:
+### 11. NOVO CARD: PRODUTO MAIS REMOVIDO
+- Exibe o produto mais removido dos pedidos no período
+- Mostra nome e quantidade total de remoções
+- API: `/api/restaurante/[id]/produto-mais-removido`
+
+### 12. NOVO CARD: TENDÊNCIA DE CRESCIMENTO
+- Exibe taxa de crescimento mensal de vendas
+- Gráfico de linha mostrando evolução dos últimos 12 meses
+- Indicador visual: ▲ verde (crescimento) ou ▼ vermelho (queda)
+- API: `/api/restaurante/[id]/tendencia-vendas`
+- Sempre mostra últimos 12 meses (não depende de período)
+
+### 13. NOVO CARD: DESVIO DA MÉDIA HISTÓRICA
+- Compara semana atual com média histórica semanal
+- Mostra receita atual, média histórica e percentual de desvio
+- Indicador visual: ▲ verde (acima da média) ou ▼ vermelho (abaixo)
+- API: `/api/restaurante/[id]/desvio-media`
+- Sempre compara últimos 7 dias vs histórico
+
+### 14. NOVO CARD: TEMPO MÉDIO DE ENTREGA
+- Exibe tempo médio de entrega em minutos
+- Mostra variação percentual vs período anterior
+- Indicador visual: ▲ vermelho (aumento de tempo) ou ▼ verde (redução)
+- API: `/api/restaurante/[id]/tempo-medio-entrega`
+- Formato: "X min" seguido de variação
+- Disponível no template "produtos" por padrão
+- Valores mockados: 45 min (padrão) se campo `delivery_time` não existir no banco
+
+### 15. CARDS DISPONÍVEIS
+Total de 10 cards no sistema:
 1. **Vendas** - Contagem total de vendas
 2. **Faturamento** - Receita total
 3. **Produto Mais Vendido** - Com ranking expandível
 4. **Vendas por Turno** - Distribuição por manhã/tarde/noite
 5. **Ticket Médio** - Valor médio por pedido
 6. **Vendas por Canal** - Distribuição por canal de venda
+7. **Produto Mais Removido** - Produto mais removido dos pedidos
+8. **Tendência de Crescimento** - Taxa de crescimento mensal
+9. **Desvio da Média Histórica** - Comparação com média semanal
+10. **Tempo Médio de Entrega** - Tempo médio de entrega em minutos
 
-### 12. AJUSTES DE VISUAL
+### 16. AJUSTES DE VISUAL
 - Texto "período" removido antes dos botões mensal/anual
 - Cards de vendas por canal com texto branco para contraste em fundo escuro
 - Todas as legendas e nomes de canais em cor branca
 - Percentuais e quantidades de pedidos em cores mais claras
 
-### 13. RESPONSIVIDADE MOBILE (MOBILE-FRIENDLY)
+### 17. SISTEMA DE SPAWN E POSICIONAMENTO DOS CARDS
+
+#### ARQUITETURA DE POSICIONAMENTO
+
+O sistema de cards usa uma abordagem híbrida de **CSS Grid** + **posição absoluta** + **transform** para permitir arrastar cards sem afetar outros quando deletados.
+
+**Componentes:**
+1. **Container Grid**: Define a estrutura base de colunas (1/2/3 dependendo do tamanho da tela)
+2. **Posições Base**: Calculadas via `getBoundingClientRect()` na inicialização
+3. **Transform**: Usado para arrastar cards sem sair do fluxo do grid
+4. **useRef**: Controla se as posições já foram calculadas (cálculo único)
+
+**Fluxo:**
+```typescript
+// 1. Calcular posições iniciais (apenas uma vez)
+useEffect(() => {
+  if (hasCalculatedInitialStyles.current) return;
+  
+  // 2. Para cada card visível:
+  visibleCardsInOrder.forEach((cardType) => {
+    // 3. Buscar altura real do card
+    const cardHeight = cardRef.getBoundingClientRect().height;
+    
+    // 4. Encontrar coluna com menor altura (algoritmo de masonry)
+    let minHeight = columnHeights[0];
+    let targetColumn = 0;
+    for (let i = 1; i < numColumns; i++) {
+      if (columnHeights[i] < minHeight) {
+        minHeight = columnHeights[i];
+        targetColumn = i;
+      }
+    }
+    
+    // 5. Atribuir posição (left, top, width)
+    styles[cardType] = {
+      left: `${targetColumn * (columnWidth + gap)}px`,
+      top: `${columnHeights[targetColumn]}px`,
+      width: `${columnWidth}px`
+    };
+    
+    // 6. Atualizar altura acumulada da coluna
+    columnHeights[targetColumn] += cardHeight + verticalGap;
+  });
+  
+  setCardStyles(styles);
+  hasCalculatedInitialStyles.current = true;
+}, [visibleCards, currentTemplate]);
+```
+
+#### ALGORITMO DE MASONRY
+
+Os cards são posicionados usando o algoritmo de masonry (Pinterest-style):
+- **Primeira posição**: Topo da coluna (top = 0)
+- **Próximas posições**: Base da coluna com menor altura acumulada
+- **Gap vertical**: 8px entre cards na mesma coluna
+- **Gap horizontal**: 16px entre colunas
+
+**Vantagens:**
+- Distribuição uniforme entre colunas
+- Sem espaços grandes inutilizados
+- Colunas independentes (uma não afeta a outra)
+
+#### ISOLAMENTO DE DELETAR CARDS
+
+**Problema:** Quando um card é deletado, outros se moviam porque o grid era recalculado.
+
+**Solução:** Uso de `useRef` para garantir que posições são calculadas apenas uma vez:
+```typescript
+const hasCalculatedInitialStyles = useRef(false);
+
+useEffect(() => {
+  if (hasCalculatedInitialStyles.current) return; // ← Retorna se já calculou
+  hasCalculatedInitialStyles.current = true;
+  // ... calcular posições ...
+}, [visibleCards, currentTemplate]);
+```
+
+**Resultado:** 
+- Cards mantêm suas posições originais quando outro é deletado
+- Apenas o card deletado desaparece da tela
+- Não há reorganização indesejada do layout
+
+#### TEMPLATES E ORDEM DE CARDS
+
+Cada template (geral, vendas, faturamento, produtos) define quais cards aparecem por padrão:
+
+**Template "geral":**
+- Vendas, Faturamento, Produto Mais Vendido, Vendas por Turno, Ticket Médio, Vendas por Canal
+
+**Template "vendas":**
+- Vendas, Produto Mais Vendido, Vendas por Turno, Vendas por Canal, Tendência de Crescimento, Desvio da Média Histórica
+
+**Template "faturamento":**
+- Faturamento, Ticket Médio
+
+**Template "produtos":**
+- Produto Mais Vendido, Produto Mais Removido, **Tempo Médio de Entrega**
+
+**Ordem de renderização:**
+A ordem dos cards segue a definição em `allCardsOrder`:
+```typescript
+const allCardsOrder = [
+  'sales', 'revenue', 'ticketMedio', 'turno', 
+  'tendencia', 'canal', 'produto', 'produtoRemovido', 
+  'desvioMedia', 'tempoMedioEntrega'
+];
+```
+
+Esta ordem determina:
+1. **Prioridade de spawn**: Primeiros cards na lista vão primeiro
+2. **Coluna inicial**: `índice % numColumns` define a coluna
+3. **Posição na ordem de empilhamento**: Usado no algoritmo de masonry
+
+#### POSICIONAMENTO COM TRANSFORM
+
+**Estilo aplicado:**
+```typescript
+// Base: posição calculada pelo algoritmo
+style={{ left: '0px', top: '0px', width: '320px' }}
+
+// Transform: deslocamento do usuário
+style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+```
+
+**Vantagem:** O transform não afeta o cálculo de altura dos outros cards, mantendo o layout estável durante o drag.
+
+#### RESUMO DE RECURSOS
+
+✅ **Posições preservadas** ao deletar cards
+✅ **Drag and drop** funcional sem afetar layout  
+✅ **Masonry layout** automático (distribuição inteligente)
+✅ **3 colunas** no desktop, 2 no tablet, 1 no mobile
+✅ **Colunas independentes** com altura própria
+✅ **Gap consistente** entre cards
+
+### 18. RESPONSIVIDADE MOBILE (MOBILE-FRIENDLY)
 A aplicação é totalmente responsiva e funciona corretamente em dispositivos móveis.
 
 #### LAYOUT RESPONSIVO
@@ -449,15 +631,19 @@ const handleTouchMove = (e: TouchEvent) => {
 
 #### ORDEM DOS CARDS EM MOBILE
 
-Em dispositivos móveis, os cards aparecem em ordem vertical:
+Em dispositivos móveis, os cards aparecem em ordem vertical seguindo `allCardsOrder`:
 1. **Vendas** (topo)
 2. **Faturamento**
-3. **Vendas por Canal**
+3. **Ticket Médio**
 4. **Vendas por Turno**
-5. **Ticket Médio**
-6. **Produto Mais Vendido** (fim)
+5. **Tendência de Crescimento**
+6. **Vendas por Canal**
+7. **Produto Mais Vendido**
+8. **Produto Mais Removido**
+9. **Desvio da Média Histórica**
+10. **Tempo Médio de Entrega** (fim)
 
-**Nota:** Como o grid é de 1 coluna em mobile, a ordem vertical corresponde à ordem no código.
+**Nota:** Como o grid é de 1 coluna em mobile, a ordem vertical corresponde à ordem em `allCardsOrder`.
 
 #### FOOTER RESPONSIVO
 
