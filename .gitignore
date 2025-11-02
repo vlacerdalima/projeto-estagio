@@ -49,3 +49,6 @@ coverage/
 # Misc
 dist/
 tmp/
+
+# clerk configuration (can include secrets)
+/.clerk/

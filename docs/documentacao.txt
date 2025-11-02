@@ -30,22 +30,34 @@ O projeto requer uma instância de banco de dados PostgreSQL para funcionar.
 
 4. VARIÁVEIS DE AMBIENTE (REQUERIDAS)
 --------------------------------------
-As credenciais do banco de dados são lidas via variáveis de ambiente. Crie um arquivo .env.local na raiz do projeto (este arquivo deve ser IGNORADO pelo Git).
+As credenciais do banco de dados e do Clerk são lidas via variáveis de ambiente. Crie um arquivo .env.local na raiz do projeto (este arquivo deve ser IGNORADO pelo Git).
 
 * DB_HOST: Host do servidor PostgreSQL (Ex: localhost)
 * DB_PORT: Porta de conexão do PostgreSQL (Ex: 5432)
 * DB_NAME: Nome do banco de dados (Ex: challenge_db)
 * DB_USER: Usuário de acesso ao banco (Ex: challenge)
 * DB_PASSWORD: Senha de acesso ao banco. (Preencha com a sua senha)
+* NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: Chave pública do Clerk
+* CLERK_SECRET_KEY: Chave secreta do Clerk
 
 5. COMO RODAR O PROJETO
 -----------------------
 1. Garanta que a instância do PostgreSQL esteja rodando e acessível com as credenciais definidas.
-2. Instale as dependências: npm install
-3. Execute em modo desenvolvimento: npm run dev
-4. Acesse: http://localhost:3000
+2. Crie a tabela de permissões (database/user-restaurants-permissions.sql)
+3. Instale as dependências: npm install
+4. Execute em modo desenvolvimento: npm run dev
+5. Acesse: http://localhost:3000 (será redirecionado para /sign-in se não estiver autenticado)
 
 6. ESTILO E INTERFACE
 ---------------------
 * Estilo: Utiliza o sistema de classes Tailwind CSS, com componentes estruturados no padrão shadcn/ui.
 * Paleta de Cores: Fundo Branco (#ffffff) e Salmão (#fa8072) como cor primária de acento.
+
+7. AUTENTICAÇÃO E PERMISSÕES
+-----------------------------
+* Sistema: Clerk para autenticação de usuários
+* Paginas: /sign-in (login) e /sign-up (cadastro)
+* Permissões: Tabela user_restaurants controla acesso aos restaurantes
+* Whitelist: dev@nola.br tem acesso total
+* Usuários com registros: Acesso limitado aos restaurantes permitidos
+* Usuários sem registros: Sem acesso aos restaurantes

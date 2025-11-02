@@ -7,7 +7,8 @@ Aplicação desenvolvida como parte do processo para estágio, utilizando tecnol
 ## 🧩 Stack Principal
 - **Next.js (App Router + TypeScript)**
 - **TailwindCSS + shadcn/ui + Recharts**
-- **Better Auth (autenticação)**
+- **Clerk (autenticação)**
+- **PostgreSQL**
 - **Docker / Docker Compose**
 
 ---

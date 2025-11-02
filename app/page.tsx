@@ -10,6 +10,7 @@ import { useCardVisibility } from '@/app/hooks/useCardVisibility';
 import { useRestaurantData } from '@/app/hooks/useRestaurantData';
 import { useCardDrag } from '@/app/hooks/useCardDrag';
 import { shouldPreventDrag } from '@/app/utils/cardHelpers';
+import { UserButton } from '@clerk/nextjs';
 import type { Period, CardType, Position, VendasTurno, ProdutoMaisVendido } from '@/app/types';
 import type { ComparisonCardType } from './components/ComparisonView';
 
@@ -207,6 +208,9 @@ export default function Home() {
       }}
     >
       <main className="flex flex-col px-4 md:px-20 py-4">
+        <header className="absolute top-4 right-4 md:right-20 z-50">
+          <UserButton afterSignOutUrl="/sign-in" />
+        </header>
         <div className="flex flex-col gap-3 w-full mb-2">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full">
             <div className="flex-1 min-w-0">

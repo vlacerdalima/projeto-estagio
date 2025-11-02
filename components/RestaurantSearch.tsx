@@ -38,8 +38,19 @@ export default function RestaurantSearch({ onSelect, period }: RestaurantSearchP
   useEffect(() => {
     fetch('/api/restaurantes')
       .then(res => res.json())
-      .then(data => setRestaurants(data))
-      .catch(err => console.error('Erro ao carregar restaurantes:', err));
+      .then(data => {
+        // Garantir que data é um array
+        if (Array.isArray(data)) {
+          setRestaurants(data);
+        } else {
+          console.error('Dados inválidos recebidos da API:', data);
+          setRestaurants([]);
+        }
+      })
+      .catch(err => {
+        console.error('Erro ao carregar restaurantes:', err);
+        setRestaurants([]);
+      });
   }, []);
 
   const filtered = restaurants.filter(r => 
