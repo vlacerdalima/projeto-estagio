@@ -56,6 +56,7 @@ interface CardsGridProps {
   onToggleRanking: () => void;
   onFetchRanking: () => void;
   onToggleRegioes: () => void;
+  onFetchRegioes?: (search?: string) => void;
   onSelectRegiao: (regiao: string) => void;
   onPositionChange?: (type: CardType, position: Position) => void;
 }
@@ -91,6 +92,7 @@ export default function CardsGrid({
   onToggleRanking,
   onFetchRanking,
   onToggleRegioes,
+  onFetchRegioes,
   onSelectRegiao,
   refs,
   onPositionChange
@@ -101,6 +103,30 @@ export default function CardsGrid({
   const previousTemplateRef = useRef<TemplateType>(currentTemplate);
   const [filtroRegiao, setFiltroRegiao] = useState<string>('');
 
+  // Estado para rastrear se já houve uma busca (para saber quando restaurar top 100)
+  const hasSearchedRef = useRef(false);
+
+  // Buscar regiões no banco quando o usuário digitar (para mostrar regiões ocultas)
+  useEffect(() => {
+    if (!showRegioes || !onFetchRegioes) return;
+    
+    // Se há texto de busca, buscar no banco para mostrar regiões ocultas
+    if (filtroRegiao.trim() !== '') {
+      hasSearchedRef.current = true;
+      // Debounce para não buscar a cada tecla digitada
+      const timeoutId = setTimeout(() => {
+        onFetchRegioes(filtroRegiao);
+      }, 300); // Aguarda 300ms após parar de digitar
+      
+      return () => clearTimeout(timeoutId);
+    } else if (hasSearchedRef.current) {
+      // Se o usuário apagou a busca e já havia pesquisado antes, restaurar top 100
+      hasSearchedRef.current = false;
+      onFetchRegioes(); // Busca sem parâmetro = top 100
+    }
+    // Se não há busca e nunca houve busca, manter as top 100 já carregadas
+  }, [filtroRegiao, showRegioes, onFetchRegioes]);
+
   // Resetar cálculo quando o template mudar
   useEffect(() => {
     if (previousTemplateRef.current !== currentTemplate) {
@@ -109,10 +135,11 @@ export default function CardsGrid({
     }
   }, [currentTemplate]);
 
-  // Resetar filtro quando o dropdown fechar
+  // Resetar filtro e estado de busca quando o dropdown fechar
   useEffect(() => {
     if (!showRegioes) {
       setFiltroRegiao('');
+      hasSearchedRef.current = false; // Resetar flag de busca
     }
   }, [showRegioes]);
 
@@ -595,16 +622,15 @@ export default function CardsGrid({
                     >
                       Todas as regiões
                     </button>
-                    {regioesEntrega
-                      .filter(regiao => 
-                        regiao.regiao.toLowerCase().includes(filtroRegiao.toLowerCase())
-                      )
-                      .length > 0 ? (
-                      regioesEntrega
-                        .filter(regiao => 
-                          regiao.regiao.toLowerCase().includes(filtroRegiao.toLowerCase())
-                        )
-                        .map((regiao, index) => (
+                    {(() => {
+                      // Se há busca, mostrar todas as regiões retornadas (já filtradas no banco)
+                      // Se não há busca, mostrar todas as regiões carregadas (top 100)
+                      const regioesExibidas = filtroRegiao.trim() !== '' 
+                        ? regioesEntrega // Já filtradas no banco
+                        : regioesEntrega; // Top 100 já carregadas
+                      
+                      return regioesExibidas.length > 0 ? (
+                        regioesExibidas.map((regiao, index) => (
                           <button
                             key={index}
                             onClick={() => {
@@ -621,11 +647,12 @@ export default function CardsGrid({
                             <span className="text-xs text-zinc-500 ml-2">{regiao.tempoMedioMinutos} min</span>
                           </button>
                         ))
-                    ) : filtroRegiao ? (
-                      <div className="text-xs text-zinc-500 text-center py-2">Nenhuma região encontrada</div>
-                    ) : (
-                      <div className="text-xs text-zinc-500 text-center py-2">Sem regiões disponíveis</div>
-                    )}
+                      ) : filtroRegiao ? (
+                        <div className="text-xs text-zinc-500 text-center py-2">Nenhuma região encontrada</div>
+                      ) : (
+                        <div className="text-xs text-zinc-500 text-center py-2">Sem regiões disponíveis</div>
+                      );
+                    })()}
                   </>
                 )}
               </div>
@@ -649,7 +676,7 @@ export default function CardsGrid({
             Produtos Sazonais
           </div>
           <div className="text-xs text-gray-400 mb-2">
-            diferença aos meses médios (últimos 24 meses)
+            Diferença aos períodos médios
           </div>
           {sazonalidadeProdutos && sazonalidadeProdutos.produtos.length > 0 ? (
             <div className="space-y-2">

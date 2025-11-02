@@ -7,6 +7,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // NOTA: Funcionalidade temporariamente desativada
+    // A equipe de desenvolvimento ainda não forneceu informações sobre a estrutura correta
+    // do banco de dados para esta funcionalidade. Mantendo a lógica mas não executando queries.
+    return NextResponse.json({
+      nome: null,
+      total: 0
+    });
+
+    /* CÓDIGO ORIGINAL MANTIDO PARA REFERÊNCIA - NÃO EXECUTA
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || 'anual';
@@ -303,6 +312,7 @@ export async function GET(
       nome: null,
       total: 0
     });
+    */
   } catch (error) {
     console.error('❌ Erro ao buscar produto mais removido:', error);
     return NextResponse.json({

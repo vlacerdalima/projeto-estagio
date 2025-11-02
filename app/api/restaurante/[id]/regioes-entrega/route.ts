@@ -12,10 +12,26 @@ export async function GET(
     const period = searchParams.get('period') || 'anual';
     const year = searchParams.get('year');
     const month = searchParams.get('month');
+    const search = searchParams.get('search') || ''; // Parâmetro de busca opcional
     
     const { filter: filterClause, params: dateParams } = buildDateFilter(year, month, period, 's.');
     
-    // Buscar todas as regiões (neighborhood) únicas que têm entregas no período
+    // Construir filtro de busca se fornecido
+    let searchFilter = '';
+    
+    if (search && search.trim() !== '') {
+      // O índice do parâmetro é: $1 (store_id) + dateParams.length + 1 (próximo parâmetro)
+      const searchParamIndex = dateParams.length + 2;
+      searchFilter = `AND da.neighborhood ILIKE $${searchParamIndex}`;
+      dateParams.push(`%${search.trim()}%`);
+    }
+    
+    // Query otimizada: Se há busca, não usar LIMIT (mostrar todas as correspondências)
+    // Se não há busca, usar LIMIT 100 para performance (top 100 regiões)
+    const limitClause = search && search.trim() !== '' ? '' : 'LIMIT 100';
+    
+    // Buscar regiões (neighborhood) únicas que têm entregas no período
+    // Otimização: LIMIT 100 quando não há busca para garantir performance <= 2s
     const sql = `SELECT 
                    da.neighborhood as regiao,
                    COUNT(DISTINCT s.id) as total_entregas,
@@ -27,8 +43,10 @@ export async function GET(
                    AND s.delivery_seconds IS NOT NULL
                    AND da.neighborhood IS NOT NULL
                    AND da.neighborhood != ''
+                   ${searchFilter}
                  GROUP BY da.neighborhood
-                 ORDER BY total_entregas DESC`;
+                 ORDER BY total_entregas DESC
+                 ${limitClause}`;
     
     const result = await pool.query(sql, [id, ...dateParams]);
     

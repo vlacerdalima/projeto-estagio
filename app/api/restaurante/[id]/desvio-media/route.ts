@@ -21,25 +21,24 @@ export async function GET(
     const semanaAtualResult = await pool.query(semanaAtualQuery, [id]);
     const semanaAtual = parseFloat(semanaAtualResult.rows[0]?.receita || 0);
 
-    // Calcular a média histórica de receita semanal
-    // Vamos pegar as últimas 12 semanas (excluindo a semana atual) dos últimos 3 meses
-    // Agrupar por semana (usando DATE_TRUNC para agrupar por semana)
+    // Calcular a média histórica de receita semanal (otimizada)
+    // Query simplificada sem CTE para melhor performance com índices
+    // Pega as últimas 12 semanas (excluindo a semana atual)
     const mediaHistoricaQuery = `
-      WITH semanas_historicas AS (
+      SELECT COALESCE(AVG(receita_semanal), 0) as media_historica
+      FROM (
         SELECT 
           DATE_TRUNC('week', s.created_at) as semana,
-          COALESCE(SUM(p.value), 0) as receita_semanal
+          SUM(p.value) as receita_semanal
         FROM sales s
         JOIN payments p ON s.id = p.sale_id
         WHERE s.store_id = $1
         AND s.created_at >= NOW() - INTERVAL '3 months'
-        AND s.created_at < NOW() - INTERVAL '7 days' -- Excluir a semana atual
+        AND s.created_at < NOW() - INTERVAL '7 days'
         GROUP BY DATE_TRUNC('week', s.created_at)
         ORDER BY semana DESC
         LIMIT 12
-      )
-      SELECT COALESCE(AVG(receita_semanal), 0) as media_historica
-      FROM semanas_historicas
+      ) semanas_historicas
     `;
     
     const mediaHistoricaResult = await pool.query(mediaHistoricaQuery, [id]);

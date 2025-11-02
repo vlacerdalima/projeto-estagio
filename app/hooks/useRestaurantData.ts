@@ -134,13 +134,14 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
     }
   };
 
-  const fetchRegioes = async () => {
+  const fetchRegioes = async (search?: string) => {
     if (selectedRestaurant) {
       setLoadingRegioes(true);
       try {
         const yearParam = year && year !== 'todos' ? `&year=${year}` : '';
         const monthParam = month && month !== 'todos' ? `&month=${month}` : '';
-        const params = `period=${period}${yearParam}${monthParam}`;
+        const searchParam = search && search.trim() !== '' ? `&search=${encodeURIComponent(search.trim())}` : '';
+        const params = `period=${period}${yearParam}${monthParam}${searchParam}`;
         const response = await fetch(`/api/restaurante/${selectedRestaurant}/regioes-entrega?${params}`);
         const data = await response.json();
         setRegioesEntrega(data);

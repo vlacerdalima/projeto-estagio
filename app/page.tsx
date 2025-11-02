@@ -283,10 +283,11 @@ export default function Home() {
           onFetchRanking={fetchRanking}
           onToggleRegioes={() => {
             if (!showRegioes && regioesEntrega.length === 0) {
-              fetchRegioes();
+              fetchRegioes(); // Carrega top 100 inicial
             }
             setShowRegioes(!showRegioes);
           }}
+          onFetchRegioes={fetchRegioes}
           onSelectRegiao={(regiao: string) => {
             setSelectedRegiao(regiao);
             setShowRegioes(false);

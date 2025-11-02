@@ -15,7 +15,8 @@ export async function GET(
     
     const { filter: filterClause, params: dateParams } = buildDateFilter(year, month, period, 's.');
     
-    // Tenta as mesmas queries do produto mais vendido, mas sem LIMIT
+    // Queries otimizadas com LIMIT para melhor performance
+    // LIMIT 100 garante que não retornaremos mais que isso mesmo com 500k+ registros
     const queries = [
       {
         sql: `SELECT p.name as nome_produto, SUM(ps.quantity) as total_vendido 
@@ -24,7 +25,8 @@ export async function GET(
               JOIN products p ON ps.product_id = p.id 
               WHERE s.store_id = $1 ${filterClause}
               GROUP BY p.name 
-              ORDER BY total_vendido DESC`,
+              ORDER BY total_vendido DESC
+              LIMIT 100`,
         name: 'product_sales + products'
       },
       {
@@ -34,7 +36,8 @@ export async function GET(
               JOIN Products p ON ps.productId = p.id 
               WHERE s.store_id = $1 ${filterClause}
               GROUP BY p.name 
-              ORDER BY total_vendido DESC`,
+              ORDER BY total_vendido DESC
+              LIMIT 100`,
         name: 'ProductSales + Products'
       },
       {
@@ -44,7 +47,8 @@ export async function GET(
               JOIN products p ON sp.product_id = p.id 
               WHERE s.store_id = $1 ${filterClause}
               GROUP BY p.name 
-              ORDER BY total_vendido DESC`,
+              ORDER BY total_vendido DESC
+              LIMIT 100`,
         name: 'sale_products + products'
       }
     ];

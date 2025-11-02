@@ -16,26 +16,24 @@ export async function GET(
     const { filter: filterClause, params: dateParams } = buildDateFilter(year, month, period, '');
     
     try {
-      // Usando CTE para evitar problema com alias no GROUP BY
-      const sql = `WITH vendas_por_turno AS (
-        SELECT 
+      // Query otimizada - agregação direta sem CTE para melhor uso de índices
+      // O índice idx_sales_store_created otimiza o filtro WHERE store_id + created_at
+      const sql = `SELECT 
+        CASE 
+          WHEN EXTRACT(HOUR FROM created_at) >= 6 AND EXTRACT(HOUR FROM created_at) < 12 THEN 'manha'
+          WHEN EXTRACT(HOUR FROM created_at) >= 12 AND EXTRACT(HOUR FROM created_at) < 18 THEN 'tarde'
+          ELSE 'noite'
+        END as turno,
+        COUNT(*) as total
+        FROM sales
+        WHERE store_id = $1 ${filterClause}
+        GROUP BY 
           CASE 
             WHEN EXTRACT(HOUR FROM created_at) >= 6 AND EXTRACT(HOUR FROM created_at) < 12 THEN 'manha'
             WHEN EXTRACT(HOUR FROM created_at) >= 12 AND EXTRACT(HOUR FROM created_at) < 18 THEN 'tarde'
             ELSE 'noite'
-          END as turno
-        FROM sales
-        WHERE store_id = $1 ${filterClause}
-      )
-      SELECT turno, COUNT(*) as total
-      FROM vendas_por_turno
-      GROUP BY turno
-      ORDER BY 
-        CASE turno
-          WHEN 'manha' THEN 1
-          WHEN 'tarde' THEN 2
-          WHEN 'noite' THEN 3
-        END`;
+          END
+        ORDER BY turno`;
       
       const result = await pool.query(sql, [id, ...dateParams]);
       

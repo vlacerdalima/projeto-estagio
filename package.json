@@ -6,13 +6,15 @@
     "dev": "next dev -H 0.0.0.0",
     "build": "next build",
     "start": "next start -H 0.0.0.0",
-    "lint": "eslint"
+    "lint": "eslint",
+    "benchmark": "tsx scripts/benchmark-queries.ts"
   },
   "dependencies": {
     "@clerk/clerk-js": "^5.103.1",
     "@clerk/nextjs": "^6.34.1",
     "@radix-ui/react-slot": "^1.2.3",
     "class-variance-authority": "^0.7.1",
+    "dotenv": "^16.6.1",
     "next": "16.0.0",
     "pg": "^8.16.3",
     "react": "19.2.0",
@@ -27,6 +29,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.0",
     "tailwindcss": "^4",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   }
 }
