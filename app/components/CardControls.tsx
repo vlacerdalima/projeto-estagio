@@ -84,7 +84,8 @@ export default function CardControls({
     tendencia: 'Tendência de Crescimento',
     desvioMedia: 'Desvio da Média Histórica',
     tempoMedioEntrega: 'Tempo Médio de Entrega',
-    sazonalidade: 'Sazonalidade de Produtos'
+    sazonalidade: 'Sazonalidade de Produtos',
+    clientesRecorrentesSumidos: 'Clientes Recorrentes Inativos'
   };
 
   // Quando em modo comparação, usar os cards de comparação

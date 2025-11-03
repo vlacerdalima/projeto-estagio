@@ -1,38 +1,39 @@
-# Decisões de Arquitetura
+# DECISÕES DE ARQUITETURA
 
-## Uso de SQL Raw vs Prisma ORM
+## VISÃO GERAL
 
-### Decisão: Manter SQL Raw ao invés de Prisma
+Documentação das principais decisões arquiteturais tomadas durante o desenvolvimento do projeto.
 
-**Data da Decisão**: Durante desenvolvimento do desafio técnico
+---
 
-### Contexto
+## SQL RAW vs ORM
 
-Durante o desenvolvimento, foi avaliada a possibilidade de migrar o projeto para usar Prisma ORM ao invés das queries SQL raw com `pg`.
+### Decisão: Manter SQL Raw
 
-### Decisão Tomada
-
-Optamos por **não migrar para Prisma** e manter o uso de SQL raw com prepared statements através do cliente `pg`.
+**Escolha**: SQL raw com `pg` ao invés de Prisma/Sequelize ORM
 
 ### Justificativa
 
-1. **Complexidade do Projeto**: O projeto já possui um sistema customizado de filtros de data (`buildDateFilter`) e queries complexas com fallbacks para diferentes estruturas de tabela
-2. **Duração do Projeto**: Tratando-se de um desafio técnico com prazo limitado, a migração consumiria tempo valioso sem agregar valor significativo no curto prazo
-3. **Funcionamento Atual**: O sistema já estava funcionando corretamente com SQL raw, utilizando prepared statements para segurança
-4. **Risco vs. Benefício**: O risco de introduzir bugs durante a migração superava os benefícios de usar um ORM neste contexto específico
+1. **Sistema Customizado**: Projeto já possui `buildDateFilter` e queries com fallbacks
+2. **Prazo Limitado**: Desafio técnico de 1 semana não justificava migração
+3. **Funcionamento Adequado**: Sistema atual funciona corretamente com prepared statements
+4. **Risco vs Benefício**: Risco de introduzir bugs superava benefícios no contexto
 
-### Implementação Atual
+### Implementação
 
 - **Biblioteca**: `pg` (PostgreSQL client)
-- **Segurança**: Prepared statements ($1, $2, etc.) para prevenir SQL injection
-- **Abstração**: Função customizada `buildDateFilter` para construção segura de filtros de data
-- **Localização**: `lib/db.ts` e `lib/dateFilter.ts`
+- **Segurança**: Prepared statements ($1, $2, etc.)
+- **Função Customizada**: `buildDateFilter` para filtros de data seguros
+- **Localização**: `lib/db.ts`, `lib/dateFilter.ts`
 
-### Considerações Futuras
+---
 
-Para projetos de longo prazo ou com equipes maiores, a migração para Prisma pode ser reconsiderada devido aos benefícios de:
+## CONSIDERAÇÕES FUTURAS
+
+Para projetos de longo prazo, considerar migração para ORM devido a:
 - Type safety aprimorado
 - Migrações versionadas
 - Schema centralizado
 - Manutenibilidade em projetos maiores
 
+---

@@ -34,7 +34,7 @@ export interface CanalData {
   percentual: number;
 }
 
-export type CardType = 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal' | 'produtoRemovido' | 'tendencia' | 'desvioMedia' | 'tempoMedioEntrega' | 'sazonalidade';
+export type CardType = 'sales' | 'revenue' | 'produto' | 'turno' | 'ticketMedio' | 'canal' | 'produtoRemovido' | 'tendencia' | 'desvioMedia' | 'tempoMedioEntrega' | 'sazonalidade' | 'clientesRecorrentesSumidos';
 
 export type TemplateType = 'geral' | 'vendas' | 'faturamento' | 'produtos';
 
@@ -50,6 +50,7 @@ export interface VisibleCards {
   desvioMedia: boolean;
   tempoMedioEntrega: boolean;
   sazonalidade: boolean;
+  clientesRecorrentesSumidos: boolean;
 }
 
 export interface ProdutoMaisVendido {

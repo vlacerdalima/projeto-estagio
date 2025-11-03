@@ -53,7 +53,8 @@ export default function Home() {
     tendencia: { x: 0, y: 0 },
     desvioMedia: { x: 0, y: 0 },
     tempoMedioEntrega: { x: 0, y: 0 },
-    sazonalidade: { x: 0, y: 0 }
+    sazonalidade: { x: 0, y: 0 },
+    clientesRecorrentesSumidos: { x: 0, y: 0 }
   });
   
   // Refs dos cards - preciso criar aqui para passar ao hook
@@ -68,6 +69,7 @@ export default function Home() {
   const desvioMediaRef = useRef<HTMLDivElement>(null);
   const tempoMedioEntregaRef = useRef<HTMLDivElement>(null);
   const sazonalidadeRef = useRef<HTMLDivElement>(null);
+  const clientesRecorrentesSumidosRef = useRef<HTMLDivElement>(null);
   
   const refs: Record<CardType, React.RefObject<HTMLDivElement | null>> = {
     sales: salesRef,
@@ -80,7 +82,8 @@ export default function Home() {
     tendencia: tendenciaRef,
     desvioMedia: desvioMediaRef,
     tempoMedioEntrega: tempoMedioEntregaRef,
-    sazonalidade: sazonalidadeRef
+    sazonalidade: sazonalidadeRef,
+    clientesRecorrentesSumidos: clientesRecorrentesSumidosRef
   };
   
   // Drag dos cards
@@ -142,7 +145,8 @@ export default function Home() {
       tendencia: { x: 0, y: 0 },
       desvioMedia: { x: 0, y: 0 },
       tempoMedioEntrega: { x: 0, y: 0 },
-      sazonalidade: { x: 0, y: 0 }
+      sazonalidade: { x: 0, y: 0 },
+      clientesRecorrentesSumidos: { x: 0, y: 0 }
     });
     // Reset do ranking
     setShowRanking(false);
@@ -201,6 +205,77 @@ export default function Home() {
       }
     }
   }, [selectedRegiao, selectedRestaurant, period, selectedYear, selectedMonth]);
+
+  // Verificar e corrigir cards fora dos limites quando template mudar
+  useEffect(() => {
+    const checkAndFixCardPositions = () => {
+      // Encontrar a linha preta (divider) para calcular o limite superior
+      const divider = document.querySelector('div.bg-black.h-px');
+      if (!divider) return;
+
+      const dividerRect = divider.getBoundingClientRect();
+      const dividerBottom = dividerRect.bottom;
+      
+      // Encontrar o container dos cards (grid)
+      const gridContainer = document.querySelector('.grid');
+      if (!gridContainer) return;
+
+      const gridRect = gridContainer.getBoundingClientRect();
+      const gridTop = gridRect.top;
+      
+      // Calcular o limite superior em relação ao grid
+      // A posição y dos cards é relativa ao grid, então precisamos calcular
+      // onde a linha preta está em relação ao início do grid
+      const limitY = dividerBottom - gridTop;
+      
+      // Buffer de segurança (20px abaixo da linha preta)
+      const buffer = 20;
+      const minY = limitY + buffer;
+      
+      // Verificar cada card visível
+      const updatedPositions: Partial<Record<CardType, Position>> = {};
+      let needsUpdate = false;
+
+      Object.keys(visibleCards).forEach((cardType) => {
+        if (!visibleCards[cardType as CardType]) return;
+        
+        const cardRef = refs[cardType as CardType]?.current;
+        if (!cardRef) return;
+
+        const currentPos = positions[cardType as CardType];
+        const cardY = currentPos.y;
+
+        // Se o card está acima da linha preta (y negativo ou muito pequeno)
+        // Verificar usando a posição atual do card em relação ao topo do grid
+        if (cardY < minY) {
+          // Resetar para abaixo da linha preta, mantendo a posição X
+          updatedPositions[cardType as CardType] = {
+            x: currentPos.x,
+            y: minY
+          };
+          needsUpdate = true;
+        }
+      });
+
+      if (needsUpdate) {
+        setPositions(prev => ({
+          ...prev,
+          ...updatedPositions
+        }));
+      }
+    };
+
+    // Aguardar um pouco para garantir que o DOM foi atualizado após mudança de template
+    const timeoutId = setTimeout(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          checkAndFixCardPositions();
+        });
+      });
+    }, 150);
+
+    return () => clearTimeout(timeoutId);
+  }, [currentTemplate, visibleCards, refs]);
 
   return (
     <div
@@ -283,6 +358,7 @@ export default function Home() {
           desvioMedia={data.desvioMedia}
           tempoMedioEntrega={data.tempoMedioEntrega}
           sazonalidadeProdutos={data.sazonalidadeProdutos}
+          clientesRecorrentesSumidos={data.clientesRecorrentesSumidos}
           loadingTicketMedio={loadingTicketMedio}
           showRanking={showRanking}
           produtosRanking={produtosRanking}

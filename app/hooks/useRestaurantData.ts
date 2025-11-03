@@ -13,6 +13,7 @@ interface RestaurantData {
   desvioMedia: DesvioMedia | null;
   tempoMedioEntrega: TempoMedioEntrega | null;
   sazonalidadeProdutos: SazonalidadeProdutos | null;
+  clientesRecorrentesSumidos: number | null;
 }
 
 export function useRestaurantData(selectedRestaurant: number | null, period: Period, year?: string | number, month?: string | number) {
@@ -27,7 +28,8 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
         tendenciaVendas: null,
         desvioMedia: null,
         tempoMedioEntrega: null,
-        sazonalidadeProdutos: null
+        sazonalidadeProdutos: null,
+        clientesRecorrentesSumidos: null
       });
   
   const [loading, setLoading] = useState(false);
@@ -47,7 +49,7 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
           const monthParam = month && month !== 'todos' ? `&month=${month}` : '';
           const params = `period=${period}${yearParam}${monthParam}`;
           
-          const [salesRes, revenueRes, produtoRes, produtoRemovidoRes, turnoRes, ticketMedioRes, canalRes, tendenciaRes, desvioMediaRes, tempoMedioEntregaRes, sazonalidadeRes] = await Promise.all([
+          const [salesRes, revenueRes, produtoRes, produtoRemovidoRes, turnoRes, ticketMedioRes, canalRes, tendenciaRes, desvioMediaRes, tempoMedioEntregaRes, sazonalidadeRes, clientesSumidosRes] = await Promise.all([
             fetch(`/api/restaurante/${selectedRestaurant}/vendas?${params}`),
             fetch(`/api/restaurante/${selectedRestaurant}/faturamento?${params}`),
             fetch(`/api/restaurante/${selectedRestaurant}/produto-mais-vendido?${params}`),
@@ -58,7 +60,8 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
             fetch(`/api/restaurante/${selectedRestaurant}/tendencia-vendas`), // Sem parâmetros - sempre últimos 12 meses
             fetch(`/api/restaurante/${selectedRestaurant}/desvio-media`),
             fetch(`/api/restaurante/${selectedRestaurant}/tempo-medio-entrega?${params}`),
-            fetch(`/api/restaurante/${selectedRestaurant}/sazonalidade-produtos?${params}`)
+            fetch(`/api/restaurante/${selectedRestaurant}/sazonalidade-produtos?${params}`),
+            fetch(`/api/restaurante/${selectedRestaurant}/clientes-recorrentes-sumidos`)
           ]);
           
           const salesData = await salesRes.json();
@@ -72,6 +75,7 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
           const desvioMediaData = await desvioMediaRes.json();
           const tempoMedioEntregaData = await tempoMedioEntregaRes.json();
           const sazonalidadeData = await sazonalidadeRes.json();
+          const clientesSumidosData = await clientesSumidosRes.json();
           
           setData({
             sales: salesData.total,
@@ -97,12 +101,27 @@ export function useRestaurantData(selectedRestaurant: number | null, period: Per
               tempoMedio: tempoMedioEntregaData.tempoMedio,
               variacao: tempoMedioEntregaData.variacao
             },
-            sazonalidadeProdutos: sazonalidadeData
+            sazonalidadeProdutos: sazonalidadeData,
+            clientesRecorrentesSumidos: clientesSumidosData.total || 0
           });
           setLoading(false);
           setLoadingTicketMedio(false);
         } catch (e) {
           console.error('Erro ao recarregar dados:', e);
+          setData({
+            sales: null,
+            revenue: null,
+            produtoMaisVendido: null,
+            produtoMaisRemovido: null,
+            vendasTurno: null,
+            ticketMedio: null,
+            vendasCanal: [],
+            tendenciaVendas: null,
+            desvioMedia: null,
+            tempoMedioEntrega: null,
+            sazonalidadeProdutos: null,
+            clientesRecorrentesSumidos: null
+          });
           setLoading(false);
           setLoadingTicketMedio(false);
         }

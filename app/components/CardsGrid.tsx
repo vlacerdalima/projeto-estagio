@@ -41,6 +41,7 @@ interface CardsGridProps {
   desvioMedia: DesvioMedia | null;
   tempoMedioEntrega: TempoMedioEntrega | null;
   sazonalidadeProdutos: SazonalidadeProdutos | null;
+  clientesRecorrentesSumidos: number | null;
   loadingTicketMedio: boolean;
   showRanking: boolean;
   produtosRanking: ProdutoRanking[];
@@ -78,6 +79,7 @@ export default function CardsGrid({
   desvioMedia,
   tempoMedioEntrega,
   sazonalidadeProdutos,
+  clientesRecorrentesSumidos,
   loadingTicketMedio,
   showRanking,
   produtosRanking,
@@ -160,7 +162,7 @@ export default function CardsGrid({
       const styles: Record<CardType, React.CSSProperties> = {} as Record<CardType, React.CSSProperties>;
       
       // Ordem base dos cards
-      const allCardsOrder = ['sales', 'revenue', 'ticketMedio', 'turno', 'tendencia', 'canal', 'produto', 'produtoRemovido', 'desvioMedia', 'tempoMedioEntrega', 'sazonalidade'];
+      const allCardsOrder = ['sales', 'revenue', 'ticketMedio', 'turno', 'tendencia', 'canal', 'produto', 'produtoRemovido', 'desvioMedia', 'tempoMedioEntrega', 'sazonalidade', 'clientesRecorrentesSumidos'];
       
       // Filtrar apenas cards visíveis na ordem original
       const visibleCardsInOrder = allCardsOrder.filter(cardType => visibleCards[cardType as CardType]);
@@ -714,6 +716,32 @@ export default function CardsGrid({
               Nenhum padrão sazonal forte encontrado no período
             </div>
           )}
+        </DraggableCard>
+      )}
+
+      {visibleCards.clientesRecorrentesSumidos && (
+        <DraggableCard
+          ref={refs.clientesRecorrentesSumidos}
+          type="clientesRecorrentesSumidos"
+          position={positions.clientesRecorrentesSumidos || { x: 0, y: 0 }}
+          isDragging={isDragging === 'clientesRecorrentesSumidos'}
+          onMouseDown={(e) => onMouseDown('clientesRecorrentesSumidos', e)}
+          onTouchStart={(e) => onTouchStart('clientesRecorrentesSumidos', e)}
+          onRemove={() => onRemoveCard('clientesRecorrentesSumidos')}
+          style={cardStyles.clientesRecorrentesSumidos}
+        >
+          <div className="text-sm font-medium text-[--color-muted-foreground] mb-2">
+            Clientes Recorrentes Inativos
+          </div>
+          <div className="text-xl md:text-3xl font-semibold text-[--color-primary]">
+            {clientesRecorrentesSumidos !== null ? clientesRecorrentesSumidos.toLocaleString() : '—'}
+          </div>
+          <div className="text-xs text-[--color-muted-foreground] mt-1">
+            {clientesRecorrentesSumidos !== null 
+              ? `${clientesRecorrentesSumidos === 1 ? 'cliente' : 'clientes'} inativos há 30 dias`
+              : ''
+            }
+          </div>
         </DraggableCard>
       )}
     </div>

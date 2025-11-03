@@ -13,7 +13,8 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
     tendencia: false,
     desvioMedia: false,
     tempoMedioEntrega: false,
-    sazonalidade: false
+    sazonalidade: false,
+    clientesRecorrentesSumidos: false
   });
   
   const [currentTemplate, setCurrentTemplate] = useState<TemplateType>('geral');
@@ -34,7 +35,8 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
         tendencia: false,
         desvioMedia: false,
         tempoMedioEntrega: true,
-        sazonalidade: false
+        sazonalidade: false,
+        clientesRecorrentesSumidos: false
       });
       cardsInitializedRef.current = true;
     }
@@ -63,7 +65,8 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
           tendencia: false,
           desvioMedia: false,
           tempoMedioEntrega: true,
-          sazonalidade: false
+          sazonalidade: false,
+          clientesRecorrentesSumidos: false
         });
         break;
       case 'vendas':
@@ -78,7 +81,8 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
           tendencia: true,
           desvioMedia: true,
           tempoMedioEntrega: false,
-          sazonalidade: false
+          sazonalidade: false,
+          clientesRecorrentesSumidos: true
         });
         break;
       case 'faturamento':
@@ -93,7 +97,8 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
           tendencia: false,
           desvioMedia: false,
           tempoMedioEntrega: false,
-          sazonalidade: false
+          sazonalidade: false,
+          clientesRecorrentesSumidos: false
         });
         break;
       case 'produtos':
@@ -108,7 +113,8 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
           tendencia: false,
           desvioMedia: false,
           tempoMedioEntrega: true,
-          sazonalidade: true
+          sazonalidade: true,
+          clientesRecorrentesSumidos: false
         });
         break;
     }
@@ -126,7 +132,8 @@ export function useCardVisibility(isSmartphone: boolean, selectedRestaurant: num
       tendencia: false,
       desvioMedia: false,
       tempoMedioEntrega: false,
-      sazonalidade: false
+      sazonalidade: false,
+      clientesRecorrentesSumidos: false
     });
   };
 
