@@ -10,11 +10,12 @@ import { useCardVisibility } from '@/app/hooks/useCardVisibility';
 import { useRestaurantData } from '@/app/hooks/useRestaurantData';
 import { useCardDrag } from '@/app/hooks/useCardDrag';
 import { shouldPreventDrag } from '@/app/utils/cardHelpers';
-import { UserButton } from '@clerk/nextjs';
+import { UserButton, useUser } from '@clerk/nextjs';
 import type { Period, CardType, Position, VendasTurno, ProdutoMaisVendido } from '@/app/types';
 import type { ComparisonCardType } from './components/ComparisonView';
 
 export default function Home() {
+  const { user } = useUser();
   const [period, setPeriod] = useState<Period>('anual');
   const [selectedYear, setSelectedYear] = useState<string | number>('todos');
   const [selectedMonth, setSelectedMonth] = useState<string | number>('todos');
@@ -24,6 +25,11 @@ export default function Home() {
   
   // Detecção de smartphone
   const isSmartphone = useSmartphoneDetection();
+  
+  // Obter nome do usuário (pode ser firstName, lastName ou fullName)
+  const userName = user?.firstName || user?.lastName 
+    ? `${user?.firstName || ''} ${user?.lastName || ''}`.trim() 
+    : user?.fullName || null;
   
   // Visibilidade dos cards
   const {
@@ -207,9 +213,18 @@ export default function Home() {
         backgroundAttachment: 'fixed'
       }}
     >
-      <main className="flex flex-col px-4 md:px-20 py-4">
-        <header className="absolute top-4 right-4 md:right-20 z-50">
-          <UserButton afterSignOutUrl="/sign-in" />
+      <main className="flex flex-col px-4 md:px-20 py-4 relative">
+        <header className="absolute right-4 md:right-20 z-50 flex items-center" style={{ top: '1.5rem' }}>
+          <div className="flex items-center gap-3">
+            {userName && (
+              <span className="text-sm md:text-base text-gray-700 font-medium hidden sm:block whitespace-nowrap flex items-center">
+                Bem vindo(a), {userName}!
+              </span>
+            )}
+            <div className="flex items-center">
+              <UserButton afterSignOutUrl="/sign-in" />
+            </div>
+          </div>
         </header>
         <div className="flex flex-col gap-3 w-full mb-2">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full">
