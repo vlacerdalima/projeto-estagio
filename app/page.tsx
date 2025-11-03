@@ -223,14 +223,9 @@ export default function Home() {
       const gridRect = gridContainer.getBoundingClientRect();
       const gridTop = gridRect.top;
       
-      // Calcular o limite superior em relação ao grid
-      // A posição y dos cards é relativa ao grid, então precisamos calcular
-      // onde a linha preta está em relação ao início do grid
-      const limitY = dividerBottom - gridTop;
-      
-      // Buffer de segurança (20px abaixo da linha preta)
+      // Calcular limite Y: posição da linha preta relativa ao início do grid + buffer
       const buffer = 20;
-      const minY = limitY + buffer;
+      const minY = (dividerBottom - gridTop) + buffer;
       
       // Verificar cada card visível
       const updatedPositions: Partial<Record<CardType, Position>> = {};
@@ -242,12 +237,14 @@ export default function Home() {
         const cardRef = refs[cardType as CardType]?.current;
         if (!cardRef) return;
 
-        const currentPos = positions[cardType as CardType];
-        const cardY = currentPos.y;
+        // Obter a posição final do card no DOM
+        const cardRect = cardRef.getBoundingClientRect();
+        const cardTop = cardRect.top;
 
-        // Se o card está acima da linha preta (y negativo ou muito pequeno)
-        // Verificar usando a posição atual do card em relação ao topo do grid
-        if (cardY < minY) {
+        // Verificar se o topo do card está ACIMA da linha preta
+        if (cardTop < dividerBottom) {
+          const currentPos = positions[cardType as CardType];
+          
           // Resetar para abaixo da linha preta, mantendo a posição X
           updatedPositions[cardType as CardType] = {
             x: currentPos.x,
