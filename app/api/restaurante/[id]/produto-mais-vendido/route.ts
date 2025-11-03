@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { buildDateFilter } from '@/lib/dateFilter';
+import { normalizeData } from '@/lib/utils';
 
 export async function GET(
   request: Request,
@@ -61,23 +62,23 @@ export async function GET(
         const result = await pool.query(query.sql, [id, ...dateParams]);
         
         if (result.rows.length > 0 && result.rows[0].nome_produto) {
-          return NextResponse.json({
+          return NextResponse.json(normalizeData({
             nome: result.rows[0].nome_produto,
             total: parseInt(result.rows[0].total_vendido)
-          });
+          }));
         }
       } catch (err: any) {
         // Tenta próxima query
       }
     }
-    return NextResponse.json({ nome: null, total: 0 });
+    return NextResponse.json(normalizeData({ nome: null, total: 0 }));
     
   } catch (error) {
     console.error('❌ Erro ao buscar produto mais vendido:', error);
-    return NextResponse.json({
+    return NextResponse.json(normalizeData({
       nome: null,
       total: 0
-    });
+    }));
   }
 }
 

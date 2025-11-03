@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { buildDateFilter } from '@/lib/dateFilter';
+import { normalizeData } from '@/lib/utils';
 
 export async function GET(
   request: Request,
@@ -63,14 +64,14 @@ export async function GET(
             total: parseInt(row.total_vendido)
           }));
           
-          return NextResponse.json(produtos);
+          return NextResponse.json(normalizeData(produtos));
         }
       } catch (err: any) {
         // Tenta próxima query
       }
     }
     
-    return NextResponse.json([]);
+    return NextResponse.json(normalizeData([]));
     
   } catch (error) {
     console.error('❌ Erro ao buscar ranking de produtos:', error);

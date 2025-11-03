@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import pool from '@/lib/db';
+import { normalizeData } from '@/lib/utils';
 
 export async function GET() {
   try {
@@ -30,7 +31,7 @@ export async function GET() {
       const result = await pool.query(
         'SELECT id, name FROM stores ORDER BY name'
       );
-      return NextResponse.json(result.rows);
+      return NextResponse.json(normalizeData(result.rows));
     }
 
     // Para todos os outros usuários, verificar se tem registros na tabela
@@ -60,7 +61,7 @@ export async function GET() {
       console.log('Tabela user_restaurants não encontrada - sem acesso');
     }
 
-    return NextResponse.json(userRestaurants);
+    return NextResponse.json(normalizeData(userRestaurants));
   } catch (error) {
     console.error('Erro ao buscar restaurantes:', error);
     return NextResponse.json(

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { buildDateFilter } from '@/lib/dateFilter';
+import { normalizeData } from '@/lib/utils';
 
 export async function GET(
   request: Request,
@@ -83,15 +84,15 @@ export async function GET(
       });
       
       console.log('📊 Canais processados:', canais);
-      return NextResponse.json(canais);
+      return NextResponse.json(normalizeData(canais));
     }
     
     console.log('⚠️ Nenhum dado encontrado para vendas por canal');
-    return NextResponse.json([]);
+    return NextResponse.json(normalizeData([]));
     
   } catch (error) {
     console.error('❌ Erro ao buscar vendas por canal:', error);
-    return NextResponse.json([]);
+    return NextResponse.json(normalizeData([]));
   }
 }
 
