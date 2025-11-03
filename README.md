@@ -1,15 +1,46 @@
-# 🚀 Projeto Estágio
+# 🚀 Análise de Restaurantes
 
-Aplicação desenvolvida como parte do processo para estágio, utilizando tecnologias modernas com foco em performance, escalabilidade e boas práticas de desenvolvimento.
+Dashboard interativo de análise de vendas e métricas para restaurantes, desenvolvido com tecnologias modernas.
 
 ---
 
-## 🧩 Stack Principal
-- **Next.js (App Router + TypeScript)**
-- **TailwindCSS + shadcn/ui + Recharts**
-- **Clerk (autenticação)**
-- **PostgreSQL**
-- **Docker / Docker Compose**
+## 🧩 Tecnologias
+
+- **Next.js 16** (App Router + TypeScript)
+- **Neon** (PostgreSQL Serverless)
+- **Clerk** (Autenticação)
+- **TailwindCSS + shadcn/ui**
+- **Recharts** (Gráficos)
+
+---
+
+## 👤 Usuários
+
+### Dev - Acesso Total
+- **Email:** `dev@nola.br`
+- **Senha:** `nola2025`
+- **Permissão:** Acesso completo a todos os restaurantes e dados
+
+### Alves - Usuário com 3 restaurantes
+- **Email:** `alves@usuario.com`
+- **Senha:** `alvesUser`
+
+---
+
+## 🚀 Deploy
+
+Aplicação disponível em: [Vercel](https://projeto-estagio-nu.vercel.app)
+
+---
+
+## 📊 Funcionalidades
+
+- **Dashboard com 12 cards** de métricas (arrastáveis)
+- **Análise de vendas** por período, turno e canal
+- **Ranking de produtos** mais vendidos
+- **Tendências** e sazonalidade
+- **Comparação** de períodos
+- **Responsivo** para mobile e desktop
 
 ---
 
