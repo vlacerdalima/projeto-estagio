@@ -3,13 +3,40 @@ export function cn(...classes: Array<string | false | null | undefined>) {
 }
 
 /**
+ * Tenta corrigir strings corrompidas (mojibake) que aparecem quando UTF-8 é interpretado como Latin-1
+ * Por exemplo: "SÃ£o" -> "São", "ColÃ©gio" -> "Colégio"
+ */
+function fixMojibake(str: string): string {
+	try {
+		// Tenta converter de Latin-1 para UTF-8 (correção de mojibake comum)
+		const fixed = Buffer.from(str, 'latin1').toString('utf8');
+		// Verifica se a correção parece válida (não tem mais padrões de mojibake)
+		if (!/Ã[£©³ª§]/i.test(fixed)) {
+			return fixed;
+		}
+		return str;
+	} catch {
+		// Se falhar, retorna a string original
+		return str;
+	}
+}
+
+/**
  * Remove acentos de uma string
- * Converte caracteres acentuados para suas versões sem acento
+ * Primeiro tenta corrigir mojibake, depois remove acentos
  */
 export function removeAccents(str: string): string {
 	if (!str || typeof str !== 'string') return str;
 	
-	return str
+	// Primeiro, tenta corrigir mojibake se detectado
+	let fixedStr = str;
+	if (/Ã[£©³ª§Â]/i.test(str)) {
+		// Detecta padrões comuns de mojibake
+		fixedStr = fixMojibake(str);
+	}
+	
+	// Depois, remove acentos da string (seja original ou corrigida)
+	return fixedStr
 		.normalize('NFD')
 		.replace(/[\u0300-\u036f]/g, '');
 }

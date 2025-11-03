@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { buildDateFilter } from '@/lib/dateFilter';
+import { normalizeData } from '@/lib/utils';
 
 export async function GET(
   request: Request,
@@ -50,11 +51,11 @@ export async function GET(
     
     const result = await pool.query(sql, [id, ...dateParams]);
     
-    return NextResponse.json(result.rows.map(row => ({
+    return NextResponse.json(normalizeData(result.rows.map(row => ({
       regiao: row.regiao,
       totalEntregas: parseInt(row.total_entregas),
       tempoMedioMinutos: row.tempo_medio_segundos ? Math.round(row.tempo_medio_segundos / 60) : 0
-    })));
+    }))));
     
   } catch (error) {
     console.error('❌ Erro ao buscar regiões de entrega:', error);

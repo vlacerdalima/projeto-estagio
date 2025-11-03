@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { buildDateFilter } from '@/lib/dateFilter';
+import { normalizeData } from '@/lib/utils';
 
 export async function GET(
   request: Request,
