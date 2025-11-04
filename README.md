@@ -2,6 +2,13 @@
 
 Dashboard interativo de análise de vendas e métricas para restaurantes, desenvolvido com tecnologias modernas.
 
+[📚 Ver Documentação Completa](./docs)
+Na pasta /docs, você encontra o documento de Decisões de Arquitetura e outras documentações complementares relevantes ao projeto.
+
+---
+
+A aplicação é totalmente responsiva e pode ser acessada em smartphones, porém recomenda-se o uso em notebook ou desktop para melhor desempenho e acesso a todas as funcionalidades do dashboard.
+
 ---
 
 ## 🧩 Tecnologias
@@ -11,6 +18,7 @@ Dashboard interativo de análise de vendas e métricas para restaurantes, desenv
 - **Clerk** (Autenticação)
 - **TailwindCSS + shadcn/ui**
 - **Recharts** (Gráficos)
+- **Jest** (Testes)
 
 ---
 
